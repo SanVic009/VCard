@@ -1,12 +1,56 @@
 import { Drawer } from 'expo-router/drawer';
 import { useAuth } from '../../context/AuthContext';
-import { Redirect } from 'expo-router';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { DrawerContentScrollView, DrawerItemList, DrawerItem } from 'expo-router/drawer';
+import { MaterialIcons } from '@expo/vector-icons';
+
+import { useRouter } from 'expo-router';
+
+function CustomDrawerContent(props: any) {
+  const { logout } = useAuth();
+  const router = useRouter();
+
+  // Get current active route to highlight the correct DrawerItem
+  const activeRouteName = props.state.routes[props.state.index]?.name;
+
+  return (
+    <View style={{ flex: 1 }}>
+      <DrawerContentScrollView {...props}>
+        <DrawerItem
+          label="Dashboard"
+          icon={({ color, size }) => <MaterialIcons name="dashboard" color={color} size={size} />}
+          focused={activeRouteName === 'dashboard'}
+          onPress={() => router.push('/(app)/dashboard')}
+        />
+        <DrawerItem
+          label="Settings"
+          icon={({ color, size }) => <MaterialIcons name="settings" color={color} size={size} />}
+          focused={activeRouteName === 'settings'}
+          onPress={() => router.push('/(app)/settings')}
+        />
+        <DrawerItem
+          label="About"
+          icon={({ color, size }) => <MaterialIcons name="info" color={color} size={size} />}
+          focused={activeRouteName === 'about'}
+          onPress={() => router.push('/(app)/about')}
+        />
+      </DrawerContentScrollView>
+      <View style={styles.logoutSection}>
+        <DrawerItem
+          label="Logout"
+          icon={({ color, size }) => <MaterialIcons name="logout" color={color} size={size} />}
+          onPress={() => {
+            logout();
+          }}
+        />
+      </View>
+    </View>
+  );
+}
 
 export default function AppLayout() {
-  const { token, loading } = useAuth();
+  const { loading } = useAuth();
 
-  // You can keep the splash screen open, or render a loading screen like we do here.
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -15,28 +59,13 @@ export default function AppLayout() {
     );
   }
 
-  // Only require authentication within the (app) group's layout as users
-  // need to be able to access the (auth) group and sign in again.
-  if (!token) {
-    // On web, static rendering will stop here as the user is not authenticated
-    // in the headless Node process that the pages are rendered in.
-    return <Redirect href="/auth/login" />;
-  }
-
   return (
-    <Drawer>
+    <Drawer drawerContent={(props) => <CustomDrawerContent {...props} />}>
       <Drawer.Screen
         name="dashboard"
         options={{
           drawerLabel: 'Dashboard',
           title: 'Dashboard',
-        }}
-      />
-      <Drawer.Screen
-        name="history"
-        options={{
-          drawerLabel: 'History',
-          title: 'History',
         }}
       />
       <Drawer.Screen
@@ -54,21 +83,19 @@ export default function AppLayout() {
         }}
       />
       
-      {/* Hidden screens from Drawer */}
-      <Drawer.Screen
-        name="upload"
-        options={{
-          drawerItemStyle: { display: 'none' },
-          title: 'Upload',
-        }}
-      />
-      <Drawer.Screen
-        name="results"
-        options={{
-          drawerItemStyle: { display: 'none' },
-          title: 'Results',
-        }}
-      />
+      {/* These screens exist in the group but are hidden from the sidebar using href: null */}
+      <Drawer.Screen name="upload" options={{ href: null }} />
+      <Drawer.Screen name="results" options={{ href: null }} />
+      <Drawer.Screen name="card/[id]" options={{ href: null }} />
+      <Drawer.Screen name="card/[id]/edit" options={{ href: null }} />
     </Drawer>
   );
 }
+
+const styles = StyleSheet.create({
+  logoutSection: {
+    marginBottom: 20,
+    borderTopColor: '#ccc',
+    borderTopWidth: 1,
+  },
+});

@@ -67,7 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await apiLogin(email, password);
       await saveTokens(data.access_token, data.refresh_token);
       setUser(data.user);
-      router.replace('/(app)/dashboard');
     } catch (error) {
       handleApiError(error);
     }
@@ -78,7 +77,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await apiSignup(email, password);
       await saveTokens(data.access_token, data.refresh_token);
       setUser(data.user);
-      router.replace('/(app)/dashboard');
     } catch (error) {
       handleApiError(error);
     }
@@ -92,7 +90,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       await clearTokens();
       setUser(null);
-      router.replace('/auth/login');
     }
   };
 
