@@ -10,11 +10,16 @@ export default function SignupScreen() {
   const { signup } = useAuth();
 
   const handleSignup = async () => {
+    if (password.length < 8) {
+      Alert.alert('Invalid Password', 'Password must be at least 8 characters long.');
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       await signup(email, password);
     } catch (error: any) {
-      Alert.alert('Signup Failed', error.response?.data?.detail || error.message || 'An error occurred');
+      Alert.alert('Signup Failed', error.message);
     } finally {
       setIsSubmitting(false);
     }

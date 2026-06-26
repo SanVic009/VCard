@@ -1,16 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authApi } from '../lib/api';
 import { useRouter, useSegments } from 'expo-router';
-
-type User = {
-  id: string;
-  email: string;
-};
+import { getAccessToken, saveTokens, clearTokens } from '../lib/storage';
+import { login as apiLogin, signup as apiSignup, logout as apiLogout, getMe, UserInfo } from '../lib/api';
+import axios from 'axios';
 
 type AuthContextType = {
-  user: User | null;
-  token: string | null;
+  user: UserInfo | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -20,8 +15,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   
   const segments = useSegments();
@@ -30,16 +24,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const storedToken = await AsyncStorage.getItem('access_token');
-        if (storedToken) {
-          const userData = await authApi.getMe(storedToken);
-          setToken(storedToken);
+        const token = await getAccessToken();
+        if (token) {
+          const userData = await getMe();
           setUser(userData);
+        } else {
+          setUser(null);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
-        await AsyncStorage.removeItem('access_token');
-        await AsyncStorage.removeItem('refresh_token');
+        await clearTokens();
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -52,45 +47,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     const inAuthGroup = segments[0] === 'auth';
     
-    if (!token && !inAuthGroup) {
+    if (!user && !inAuthGroup) {
       router.replace('/auth/login');
-    } else if (token && inAuthGroup) {
+    } else if (user && inAuthGroup) {
       router.replace('/(app)/dashboard');
     }
-  }, [token, segments, loading]);
+  }, [user, segments, loading]);
+
+  const handleApiError = (error: any) => {
+    if (!error.response) {
+      throw new Error("Cannot reach server. Check your connection.");
+    }
+    const message = error.response?.data?.error?.message || error.response?.data?.detail || "An error occurred";
+    throw new Error(message);
+  };
 
   const login = async (email: string, password: string) => {
-    const data = await authApi.login(email, password);
-    await AsyncStorage.setItem('access_token', data.access_token);
-    await AsyncStorage.setItem('refresh_token', data.refresh_token);
-    setToken(data.access_token);
-    setUser(data.user);
+    try {
+      const data = await apiLogin(email, password);
+      await saveTokens(data.access_token, data.refresh_token);
+      setUser(data.user);
+      router.replace('/(app)/dashboard');
+    } catch (error) {
+      handleApiError(error);
+    }
   };
 
   const signup = async (email: string, password: string) => {
-    const data = await authApi.signup(email, password);
-    await AsyncStorage.setItem('access_token', data.access_token);
-    await AsyncStorage.setItem('refresh_token', data.refresh_token);
-    setToken(data.access_token);
-    setUser(data.user);
+    try {
+      const data = await apiSignup(email, password);
+      await saveTokens(data.access_token, data.refresh_token);
+      setUser(data.user);
+      router.replace('/(app)/dashboard');
+    } catch (error) {
+      handleApiError(error);
+    }
   };
 
   const logout = async () => {
-    if (token) {
-      try {
-        await authApi.logout(token);
-      } catch (error) {
-        console.error('Logout error:', error);
-      }
+    try {
+      await apiLogout();
+    } catch (error) {
+      console.error('Logout error (ignored):', error);
+    } finally {
+      await clearTokens();
+      setUser(null);
+      router.replace('/auth/login');
     }
-    await AsyncStorage.removeItem('access_token');
-    await AsyncStorage.removeItem('refresh_token');
-    setToken(null);
-    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, signup, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
