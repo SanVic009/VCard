@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Pressable, TextInput, Modal, ScrollView } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
@@ -48,6 +48,82 @@ export default function DashboardScreen() {
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  // Sort and Filter state
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [sortBy, setSortBy] = useState<'created_desc' | 'created_asc' | 'name_asc' | 'name_desc' | 'company_asc' | 'company_desc'>('created_desc');
+  const [filterHasPhone, setFilterHasPhone] = useState(false);
+  const [filterHasEmail, setFilterHasEmail] = useState(false);
+  const [filterHasWebsite, setFilterHasWebsite] = useState(false);
+
+  const filterActive = filterHasPhone || filterHasEmail || filterHasWebsite;
+
+  const resetFilters = () => {
+    setSortBy('created_desc');
+    setFilterHasPhone(false);
+    setFilterHasEmail(false);
+    setFilterHasWebsite(false);
+  };
+
+  const processedCards = React.useMemo(() => {
+    let result = [...cards];
+
+    // Apply Client-Side Filters
+    if (filterHasPhone) {
+      result = result.filter(c => c.phones && c.phones.length > 0);
+    }
+    if (filterHasEmail) {
+      result = result.filter(c => c.emails && c.emails.length > 0);
+    }
+    if (filterHasWebsite) {
+      result = result.filter(c => c.websites && c.websites.length > 0);
+    }
+
+    // Apply Client-Side Sorting
+    result.sort((a, b) => {
+      if (sortBy === 'created_desc') {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+      if (sortBy === 'created_asc') {
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      }
+      if (sortBy === 'name_asc') {
+        const valA = (a.name || '').trim();
+        const valB = (b.name || '').trim();
+        if (!valA && valB) return 1;
+        if (valA && !valB) return -1;
+        if (!valA && !valB) return 0;
+        return valA.localeCompare(valB);
+      }
+      if (sortBy === 'name_desc') {
+        const valA = (a.name || '').trim();
+        const valB = (b.name || '').trim();
+        if (!valA && valB) return 1;
+        if (valA && !valB) return -1;
+        if (!valA && !valB) return 0;
+        return valB.localeCompare(valA);
+      }
+      if (sortBy === 'company_asc') {
+        const valA = (a.company || '').trim();
+        const valB = (b.company || '').trim();
+        if (!valA && valB) return 1;
+        if (valA && !valB) return -1;
+        if (!valA && !valB) return 0;
+        return valA.localeCompare(valB);
+      }
+      if (sortBy === 'company_desc') {
+        const valA = (a.company || '').trim();
+        const valB = (b.company || '').trim();
+        if (!valA && valB) return 1;
+        if (valA && !valB) return -1;
+        if (!valA && !valB) return 0;
+        return valB.localeCompare(valA);
+      }
+      return 0;
+    });
+
+    return result;
+  }, [cards, sortBy, filterHasPhone, filterHasEmail, filterHasWebsite]);
 
   // Debounce search input by 300ms
   useEffect(() => {
@@ -189,6 +265,18 @@ export default function DashboardScreen() {
         </View>
       );
     }
+    if (filterActive) {
+      return (
+        <View style={styles.centerEmpty}>
+          <MaterialIcons name="filter-list-off" size={64} color="#ccc" style={{ marginBottom: 10 }} />
+          <Text style={styles.emptyTitle}>No Matching Cards</Text>
+          <Text style={styles.emptySubtitle}>Try loosening your filter settings.</Text>
+          <TouchableOpacity style={styles.clearFilterButton} onPress={resetFilters}>
+            <Text style={styles.clearFilterButtonText}>Reset Filters</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
     
     return (
       <View style={styles.centerEmpty}>
@@ -209,21 +297,34 @@ export default function DashboardScreen() {
         <Pressable style={styles.overlay} onPress={() => setIsFabOpen(false)} />
       )}
 
-      {/* Search Bar */}
-      <View style={styles.searchBarContainer}>
-        <MaterialIcons name="search" size={20} color="#888" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search cards by name or company..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCapitalize="none"
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
-            <MaterialIcons name="close" size={20} color="#888" />
-          </TouchableOpacity>
-        )}
+      {/* Search and Sort/Filter Row */}
+      <View style={styles.searchRow}>
+        <View style={styles.searchBarContainer}>
+          <MaterialIcons name="search" size={20} color="#888" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search name or company..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+              <MaterialIcons name="close" size={20} color="#888" />
+            </TouchableOpacity>
+          )}
+        </View>
+        <TouchableOpacity 
+          style={[styles.filterButton, (filterActive || sortBy !== 'created_desc') && styles.filterButtonActive]} 
+          onPress={() => setShowFilterModal(true)}
+          accessibilityLabel="Sort and filter cards"
+        >
+          <MaterialIcons 
+            name="tune" 
+            size={22} 
+            color={(filterActive || sortBy !== 'created_desc') ? '#fff' : '#495057'} 
+          />
+        </TouchableOpacity>
       </View>
 
       {error && (
@@ -237,11 +338,11 @@ export default function DashboardScreen() {
 
       {loading ? (
         <CardListSkeleton />
-      ) : cards.length === 0 && !error ? (
+      ) : processedCards.length === 0 && !error ? (
         renderEmptyState()
       ) : (
         <FlashList
-          data={cards}
+          data={processedCards}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -279,6 +380,144 @@ export default function DashboardScreen() {
           <MaterialIcons name={isFabOpen ? "close" : "add"} size={28} color="#fff" />
         )}
       </TouchableOpacity>
+
+      {/* Sort & Filter Modal */}
+      <Modal
+        visible={showFilterModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowFilterModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Sort & Filter</Text>
+              <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+                <MaterialIcons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll}>
+              {/* Sort Section */}
+              <Text style={styles.sectionTitle}>Sort By</Text>
+              
+              <TouchableOpacity 
+                style={styles.optionRow} 
+                onPress={() => setSortBy('created_desc')}
+              >
+                <Text style={[styles.optionText, sortBy === 'created_desc' && styles.optionTextActive]}>
+                  Created Date (Newest first)
+                </Text>
+                {sortBy === 'created_desc' && <MaterialIcons name="check" size={20} color="#007bff" />}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.optionRow} 
+                onPress={() => setSortBy('created_asc')}
+              >
+                <Text style={[styles.optionText, sortBy === 'created_asc' && styles.optionTextActive]}>
+                  Created Date (Oldest first)
+                </Text>
+                {sortBy === 'created_asc' && <MaterialIcons name="check" size={20} color="#007bff" />}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.optionRow} 
+                onPress={() => setSortBy('name_asc')}
+              >
+                <Text style={[styles.optionText, sortBy === 'name_asc' && styles.optionTextActive]}>
+                  Name (A - Z)
+                </Text>
+                {sortBy === 'name_asc' && <MaterialIcons name="check" size={20} color="#007bff" />}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.optionRow} 
+                onPress={() => setSortBy('name_desc')}
+              >
+                <Text style={[styles.optionText, sortBy === 'name_desc' && styles.optionTextActive]}>
+                  Name (Z - A)
+                </Text>
+                {sortBy === 'name_desc' && <MaterialIcons name="check" size={20} color="#007bff" />}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.optionRow} 
+                onPress={() => setSortBy('company_asc')}
+              >
+                <Text style={[styles.optionText, sortBy === 'company_asc' && styles.optionTextActive]}>
+                  Company (A - Z)
+                </Text>
+                {sortBy === 'company_asc' && <MaterialIcons name="check" size={20} color="#007bff" />}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.optionRow} 
+                onPress={() => setSortBy('company_desc')}
+              >
+                <Text style={[styles.optionText, sortBy === 'company_desc' && styles.optionTextActive]}>
+                  Company (Z - A)
+                </Text>
+                {sortBy === 'company_desc' && <MaterialIcons name="check" size={20} color="#007bff" />}
+              </TouchableOpacity>
+
+              {/* Filter Section */}
+              <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Filter By Fields</Text>
+
+              <TouchableOpacity 
+                style={styles.optionRow} 
+                onPress={() => setFilterHasPhone(!filterHasPhone)}
+              >
+                <Text style={[styles.optionText, filterHasPhone && styles.optionTextActive]}>
+                  Has Phone Number
+                </Text>
+                <MaterialIcons 
+                  name={filterHasPhone ? "check-box" : "check-box-outline-blank"} 
+                  size={20} 
+                  color={filterHasPhone ? "#007bff" : "#666"} 
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.optionRow} 
+                onPress={() => setFilterHasEmail(!filterHasEmail)}
+              >
+                <Text style={[styles.optionText, filterHasEmail && styles.optionTextActive]}>
+                  Has Email
+                </Text>
+                <MaterialIcons 
+                  name={filterHasEmail ? "check-box" : "check-box-outline-blank"} 
+                  size={20} 
+                  color={filterHasEmail ? "#007bff" : "#666"} 
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.optionRow} 
+                onPress={() => setFilterHasWebsite(!filterHasWebsite)}
+              >
+                <Text style={[styles.optionText, filterHasWebsite && styles.optionTextActive]}>
+                  Has Website
+                </Text>
+                <MaterialIcons 
+                  name={filterHasWebsite ? "check-box" : "check-box-outline-blank"} 
+                  size={20} 
+                  color={filterHasWebsite ? "#007bff" : "#666"} 
+                />
+              </TouchableOpacity>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={styles.resetBtn} onPress={resetFilters}>
+                <Text style={styles.resetBtnText}>Reset All</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.applyBtn} onPress={() => setShowFilterModal(false)}>
+                <Text style={styles.applyBtnText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -306,13 +545,20 @@ const styles = StyleSheet.create({
     padding: 30,
     marginTop: 60,
   },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    marginTop: 15,
+    marginBottom: 5,
+    gap: 10,
+  },
   searchBarContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 8,
-    margin: 15,
-    marginBottom: 5,
     paddingHorizontal: 10,
     height: 48,
     borderWidth: 1,
@@ -322,6 +568,25 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 3,
     elevation: 1,
+  },
+  filterButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  filterButtonActive: {
+    backgroundColor: '#007bff',
+    borderColor: '#007bff',
   },
   searchIcon: {
     marginRight: 8,
@@ -338,6 +603,103 @@ const styles = StyleSheet.create({
   listContainer: {
     padding: 15,
     paddingBottom: 90,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 35,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f3f5',
+    paddingBottom: 15,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#212529',
+  },
+  modalScroll: {
+    marginVertical: 15,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#868e96',
+    textTransform: 'uppercase',
+    marginBottom: 10,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f8f9fa',
+  },
+  optionText: {
+    fontSize: 15,
+    color: '#495057',
+  },
+  optionTextActive: {
+    color: '#007bff',
+    fontWeight: '600',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 15,
+    marginTop: 10,
+  },
+  resetBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  resetBtnText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#495057',
+  },
+  applyBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: '#007bff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  applyBtnText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  clearFilterButton: {
+    marginTop: 15,
+    backgroundColor: '#007bff',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  clearFilterButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   cardItem: {
     flexDirection: 'row',

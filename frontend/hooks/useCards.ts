@@ -22,9 +22,7 @@ export function useCards() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchCards();
-  }, [fetchCards]);
+
 
   return { cards, loading, error, refresh: fetchCards };
 }

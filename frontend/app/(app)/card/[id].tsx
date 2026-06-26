@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
@@ -16,8 +16,14 @@ export default function CardDetailScreen() {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const isFirstMount = useRef(true);
+
   useFocusEffect(
     useCallback(() => {
+      if (isFirstMount.current) {
+        isFirstMount.current = false;
+        return;
+      }
       refresh();
     }, [refresh])
   );
