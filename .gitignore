@@ -1,15 +1,16 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# Dependencies & Package Managers
 node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
+# Expo / React Native
+frontend/.expo/
+frontend/dist/
+frontend/web-build/
+frontend/expo-env.d.ts
+frontend/ios/
+frontend/android/
 .kotlin/
 *.orig.*
 *.jks
@@ -17,27 +18,72 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
-
-# Metro
 .metro-health-check*
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
 
-# macOS
-.DS_Store
+# Environment Configurations & Secrets
+.env
+.env.*
+!.env.example
 *.pem
 
-# local env files
-.env*.local
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
 
-# typescript
-*.tsbuildinfo
+# OS Metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-example
+# Databases & SQLite
+*.db
+*.sqlite
+*.sqlite3
 
-# generated native folders
-/ios
-/android
+# Logs & Temporary Files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.tsbuildinfo
