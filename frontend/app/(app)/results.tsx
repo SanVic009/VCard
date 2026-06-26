@@ -71,7 +71,7 @@ export default function ResultsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<ExtractionData | null>(null);
-  const [showRaw, setShowRaw] = useState(false);
+
 
   // Editable form fields state
   const [name, setName] = useState('');
@@ -392,16 +392,7 @@ export default function ResultsScreen() {
         />
       </View>
 
-      <TouchableOpacity style={styles.rawHeader} onPress={() => setShowRaw(!showRaw)}>
-        <Text style={styles.rawTitle}>Raw AI Output</Text>
-        <MaterialIcons name={showRaw ? "expand-less" : "expand-more"} size={24} color="#555" />
-      </TouchableOpacity>
-      
-      {showRaw && (
-        <View style={styles.rawBox}>
-          <Text style={styles.rawText}>{data.raw_extraction}</Text>
-        </View>
-      )}
+
 
       <View style={styles.actionRow}>
         <TouchableOpacity 
@@ -549,30 +540,7 @@ const styles = StyleSheet.create({
   btnDisabled: {
     backgroundColor: '#a2a8b3',
   },
-  rawHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#e9ecef',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  rawTitle: {
-    fontWeight: 'bold',
-    color: '#495057',
-  },
-  rawBox: {
-    backgroundColor: '#212529',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  rawText: {
-    color: '#f8f9fa',
-    fontFamily: 'monospace',
-    fontSize: 12,
-  },
+
   actionRow: {
     flexDirection: 'row',
     gap: 15,
