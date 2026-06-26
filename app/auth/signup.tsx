@@ -7,28 +7,42 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const { signup } = useAuth();
+  const { trackEvent } = require('../../lib/analytics');
 
   const handleSignup = async () => {
+    setEmailError('');
+    setPasswordError('');
+    let hasError = false;
+
     const sanitizedEmail = email.trim().toLowerCase();
     if (!sanitizedEmail) {
-      Alert.alert('Invalid Email', 'Email address is required.');
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(sanitizedEmail)) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address.');
-      return;
+      setEmailError('Email address is required.');
+      hasError = true;
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(sanitizedEmail)) {
+        setEmailError('Please enter a valid email address.');
+        hasError = true;
+      }
     }
 
-    if (password.length < 8) {
-      Alert.alert('Invalid Password', 'Password must be at least 8 characters long.');
-      return;
+    if (!password) {
+      setPasswordError('Password is required.');
+      hasError = true;
+    } else if (password.length < 8) {
+      setPasswordError('Password must be at least 8 characters.');
+      hasError = true;
     }
+
+    if (hasError) return;
     
     try {
       setIsSubmitting(true);
       await signup(sanitizedEmail, password);
+      trackEvent('user_signed_up', { method: 'email' });
     } catch (error: any) {
       Alert.alert('Signup Failed', error.message);
     } finally {
@@ -40,20 +54,24 @@ export default function SignupScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Sign Up</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, emailError ? styles.inputError : null]}
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
       />
+      {emailError ? <Text style={styles.errorLabel}>{emailError}</Text> : null}
+
       <TextInput
-        style={styles.input}
+        style={[styles.input, passwordError ? styles.inputError : null]}
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
+      {passwordError ? <Text style={styles.errorLabel}>{passwordError}</Text> : null}
+
       {isSubmitting ? (
         <ActivityIndicator size="large" />
       ) : (
@@ -85,6 +103,16 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
     borderRadius: 5,
+  },
+  inputError: {
+    borderColor: '#dc3545',
+    marginBottom: 5,
+  },
+  errorLabel: {
+    color: '#dc3545',
+    fontSize: 12,
+    marginBottom: 15,
+    marginLeft: 5,
   },
   link: {
     marginTop: 20,

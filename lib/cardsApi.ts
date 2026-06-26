@@ -45,8 +45,10 @@ export const createCard = async (data: CardCreate): Promise<CardResponse> => {
   return response.data;
 };
 
-export const getCards = async (): Promise<CardListResponse> => {
-  const response = await api.get<CardListResponse>('/cards');
+export const getCards = async (search?: string): Promise<CardListResponse> => {
+  const response = await api.get<CardListResponse>('/cards', {
+    params: search ? { search } : undefined
+  });
   return response.data;
 };
 

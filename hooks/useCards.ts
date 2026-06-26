@@ -6,15 +6,17 @@ export function useCards() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCards = useCallback(async (silent = false) => {
+  const fetchCards = useCallback(async (silent = false, search?: string) => {
     try {
       if (!silent) setLoading(true);
       setError(null);
-      const data = await getCards();
+      const data = await getCards(search);
       setCards(data.cards);
+      return data.cards;
     } catch (err: any) {
-      const message = err.response?.data?.error?.message || err.response?.data?.detail || err.message || "Failed to load cards";
+      const message = err.message || "Failed to load cards";
       setError(message);
+      return [];
     } finally {
       if (!silent) setLoading(false);
     }

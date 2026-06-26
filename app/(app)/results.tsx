@@ -1,10 +1,68 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useImageContext } from '../../context/ImageContext';
 import * as FileSystem from 'expo-file-system/legacy';
 import { extractBusinessCard, ExtractionData } from '../../lib/extractionApi';
+import { createCard } from '../../lib/cardsApi';
 import { MaterialIcons } from '@expo/vector-icons';
+import { trackEvent } from '../../lib/analytics';
+import { mutationState } from '../../lib/mutationState';
+
+interface ListFieldProps {
+  label: string;
+  items: string[];
+  placeholder: string;
+  keyboardType?: 'default' | 'email-address' | 'phone-pad' | 'url';
+  errors?: string[];
+  onAdd: () => void;
+  onUpdate: (index: number, text: string) => void;
+  onRemove: (index: number) => void;
+}
+
+function ListField({
+  label,
+  items,
+  placeholder,
+  keyboardType = 'default',
+  errors,
+  onAdd,
+  onUpdate,
+  onRemove,
+}: ListFieldProps) {
+  return (
+    <View style={styles.listFieldContainer}>
+      <View style={styles.listHeaderRow}>
+        <Text style={styles.label}>{label}</Text>
+        <TouchableOpacity style={styles.btnAdd} onPress={onAdd}>
+          <MaterialIcons name="add" size={18} color="#007bff" />
+          <Text style={styles.btnAddText}>Add</Text>
+        </TouchableOpacity>
+      </View>
+      
+      {items.map((item, index) => (
+        <View key={index} style={{ marginBottom: 10 }}>
+          <View style={styles.listItemRow}>
+            <TextInput
+              style={[styles.input, errors?.[index] ? styles.inputError : null]}
+              value={item}
+              onChangeText={(text) => onUpdate(index, text)}
+              placeholder={placeholder}
+              keyboardType={keyboardType}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity style={styles.btnRemove} onPress={() => onRemove(index)}>
+              <MaterialIcons name="delete-outline" size={24} color="#dc3545" />
+            </TouchableOpacity>
+          </View>
+          {errors?.[index] ? (
+            <Text style={styles.errorLabel}>{errors[index]}</Text>
+          ) : null}
+        </View>
+      ))}
+    </View>
+  );
+}
 
 export default function ResultsScreen() {
   const router = useRouter();
@@ -15,12 +73,76 @@ export default function ResultsScreen() {
   const [data, setData] = useState<ExtractionData | null>(null);
   const [showRaw, setShowRaw] = useState(false);
 
+  // Editable form fields state
+  const [name, setName] = useState('');
+  const [title, setTitle] = useState('');
+  const [company, setCompany] = useState('');
+  const [address, setAddress] = useState('');
+  const [emails, setEmails] = useState<string[]>([]);
+  const [phones, setPhones] = useState<string[]>([]);
+  const [websites, setWebsites] = useState<string[]>([]);
+  
+  const [isSaving, setIsSaving] = useState(false);
+  const [emailErrors, setEmailErrors] = useState<string[]>([]);
+
+  // Emails helpers
+  const handleAddEmail = () => {
+    setEmails([...emails, '']);
+    setEmailErrors([...emailErrors, '']);
+  };
+  const handleUpdateEmail = (index: number, val: string) => {
+    const next = [...emails];
+    next[index] = val;
+    setEmails(next);
+    // Clear validation error when updating
+    if (emailErrors[index]) {
+      const nextErrors = [...emailErrors];
+      nextErrors[index] = '';
+      setEmailErrors(nextErrors);
+    }
+  };
+  const handleRemoveEmail = (index: number) => {
+    setEmails(emails.filter((_, i) => i !== index));
+    setEmailErrors(emailErrors.filter((_, i) => i !== index));
+  };
+
+  // Phones helpers
+  const handleAddPhone = () => setPhones([...phones, '']);
+  const handleUpdatePhone = (index: number, val: string) => {
+    const next = [...phones];
+    next[index] = val;
+    setPhones(next);
+  };
+  const handleRemovePhone = (index: number) => setPhones(phones.filter((_, i) => i !== index));
+
+  // Websites helpers
+  const handleAddWebsite = () => setWebsites([...websites, '']);
+  const handleUpdateWebsite = (index: number, val: string) => {
+    const next = [...websites];
+    next[index] = val;
+    setWebsites(next);
+  };
+  const handleRemoveWebsite = (index: number) => setWebsites(websites.filter((_, i) => i !== index));
+
+  const countFields = (extracted: any) => {
+    let count = 0;
+    if (extracted.name) count++;
+    if (extracted.title) count++;
+    if (extracted.company) count++;
+    if (extracted.address) count++;
+    if (extracted.emails && extracted.emails.length > 0) count += extracted.emails.length;
+    if (extracted.phones && extracted.phones.length > 0) count += extracted.phones.length;
+    if (extracted.websites && extracted.websites.length > 0) count += extracted.websites.length;
+    return count;
+  };
+
   const processImage = async () => {
     if (!selectedImage) return;
     
     try {
       setLoading(true);
       setError(null);
+      trackEvent('card_scan_started');
       
       const base64 = await FileSystem.readAsStringAsync(selectedImage.uri, {
         encoding: FileSystem.EncodingType.Base64,
@@ -29,12 +151,25 @@ export default function ResultsScreen() {
       const response = await extractBusinessCard(base64, selectedImage.mimeType);
       
       if (response.success && response.data) {
-        setData(response.data);
+        const extracted = response.data;
+        setData(extracted);
+        setName(extracted.name || '');
+        setTitle(extracted.title || '');
+        setCompany(extracted.company || '');
+        setAddress(extracted.address || '');
+        setEmails(extracted.emails || []);
+        setPhones(extracted.phones || []);
+        setWebsites(extracted.websites || []);
+        setEmailErrors(new Array((extracted.emails || []).length).fill(''));
+        trackEvent('card_scan_completed', { success: true, field_count: countFields(extracted) });
       } else {
-        setError(response.error || "Failed to extract data.");
+        const msg = response.error || "Failed to extract data.";
+        setError(msg);
+        trackEvent('card_scan_completed', { success: false, field_count: 0 });
       }
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred.");
+      trackEvent('card_scan_completed', { success: false, field_count: 0 });
     } finally {
       setLoading(false);
     }
@@ -46,13 +181,90 @@ export default function ResultsScreen() {
     }
   }, [selectedImage]);
 
-  const handleRetake = () => {
-    clearSelectedImage();
-    router.replace('/(app)/dashboard');
+  const handleDiscard = () => {
+    Alert.alert(
+      "Discard Card",
+      "Discard this card?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Discard", 
+          style: "destructive",
+          onPress: () => {
+            clearSelectedImage();
+            router.replace('/(app)/dashboard');
+          }
+        }
+      ]
+    );
   };
 
-  const handleSave = () => {
-    Alert.alert("Notice", "Save functionality coming in Module 6.");
+  const handleSave = async () => {
+    setEmailErrors([]);
+    let hasValidationError = false;
+
+    const trimmedName = name.trim();
+    const trimmedCompany = company.trim();
+    const filteredEmails = emails.map(e => e.trim()).filter(Boolean);
+    const filteredPhones = phones.map(p => p.trim()).filter(Boolean);
+    const filteredWebsites = websites.map(w => w.trim()).filter(Boolean);
+
+    // Validate email formats
+    const newEmailErrors = emails.map((email) => {
+      const trimmed = email.trim();
+      if (trimmed) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(trimmed)) {
+          hasValidationError = true;
+          return 'Invalid email format.';
+        }
+      }
+      return '';
+    });
+    setEmailErrors(newEmailErrors);
+
+    // Validation: At least one of name, company, emails, or phones must be non-empty
+    if (!trimmedName && !trimmedCompany && filteredEmails.length === 0 && filteredPhones.length === 0) {
+      Alert.alert("Validation Error", "Please fill in at least one field before saving.");
+      return;
+    }
+
+    if (hasValidationError) return;
+
+    try {
+      setIsSaving(true);
+      const cardPayload = {
+        name: trimmedName || null,
+        title: title.trim() || null,
+        company: trimmedCompany || null,
+        address: address.trim() || null,
+        emails: filteredEmails,
+        phones: filteredPhones,
+        websites: filteredWebsites,
+        image_url: selectedImage?.uri || null,
+      };
+
+      const hadEdits = (
+        trimmedName !== (data?.name || '') ||
+        title.trim() !== (data?.title || '') ||
+        trimmedCompany !== (data?.company || '') ||
+        address.trim() !== (data?.address || '') ||
+        JSON.stringify(filteredEmails) !== JSON.stringify(data?.emails || []) ||
+        JSON.stringify(filteredPhones) !== JSON.stringify(data?.phones || []) ||
+        JSON.stringify(filteredWebsites) !== JSON.stringify(data?.websites || [])
+      );
+
+      await createCard(cardPayload);
+      mutationState.hasMutated = true;
+      trackEvent('card_saved', { had_edits: hadEdits });
+      
+      clearSelectedImage();
+      router.replace('/(app)/dashboard');
+    } catch (err: any) {
+      Alert.alert("Save Failed", err.message || "An error occurred while saving the card.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!selectedImage) {
@@ -81,7 +293,7 @@ export default function ResultsScreen() {
         <MaterialIcons name="error-outline" size={48} color="#dc3545" />
         <Text style={styles.errorText}>{error}</Text>
         <View style={styles.actionRow}>
-          <TouchableOpacity style={[styles.btnSecondary, styles.flexBtn]} onPress={handleRetake}>
+          <TouchableOpacity style={[styles.btnSecondary, styles.flexBtn]} onPress={handleDiscard}>
             <Text style={styles.btnTextSecondary}>Go Back</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.btnPrimary, styles.flexBtn]} onPress={processImage}>
@@ -96,16 +308,80 @@ export default function ResultsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Extraction Results</Text>
+      <Text style={styles.title}>Review & Edit Card</Text>
       
       <View style={styles.card}>
-        <Field label="Name" value={data.name} />
-        <Field label="Title" value={data.title} />
-        <Field label="Company" value={data.company} />
-        <Field label="Address" value={data.address} />
-        <FieldList label="Emails" values={data.emails} />
-        <FieldList label="Phones" values={data.phones} />
-        <FieldList label="Websites" values={data.websites} />
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Name</Text>
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="Name"
+          />
+        </View>
+        
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Title</Text>
+          <TextInput
+            style={styles.input}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Title"
+          />
+        </View>
+        
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Company</Text>
+          <TextInput
+            style={styles.input}
+            value={company}
+            onChangeText={setCompany}
+            placeholder="Company"
+          />
+        </View>
+        
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Address</Text>
+          <TextInput
+            style={[styles.input, styles.multilineInput]}
+            value={address}
+            onChangeText={setAddress}
+            placeholder="Address"
+            multiline
+          />
+        </View>
+
+        <ListField
+          label="Emails"
+          items={emails}
+          placeholder="Email address"
+          keyboardType="email-address"
+          errors={emailErrors}
+          onAdd={handleAddEmail}
+          onUpdate={handleUpdateEmail}
+          onRemove={handleRemoveEmail}
+        />
+        
+        <ListField
+          label="Phones"
+          items={phones}
+          placeholder="Phone number"
+          keyboardType="phone-pad"
+          onAdd={handleAddPhone}
+          onUpdate={handleUpdatePhone}
+          onRemove={handleRemovePhone}
+        />
+        
+        <ListField
+          label="Websites"
+          items={websites}
+          placeholder="Website URL"
+          keyboardType="url"
+          onAdd={handleAddWebsite}
+          onUpdate={handleUpdateWebsite}
+          onRemove={handleRemoveWebsite}
+        />
       </View>
 
       <TouchableOpacity style={styles.rawHeader} onPress={() => setShowRaw(!showRaw)}>
@@ -120,40 +396,26 @@ export default function ResultsScreen() {
       )}
 
       <View style={styles.actionRow}>
-        <TouchableOpacity style={[styles.btnSecondary, styles.flexBtn]} onPress={handleRetake}>
-          <Text style={styles.btnTextSecondary}>Retake</Text>
+        <TouchableOpacity 
+          style={[styles.btnSecondary, styles.flexBtn]} 
+          onPress={handleDiscard}
+          disabled={isSaving}
+        >
+          <Text style={styles.btnTextSecondary}>Discard</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.btnPrimary, styles.flexBtn]} onPress={handleSave}>
-          <Text style={styles.btnText}>Save Card</Text>
+        
+        <TouchableOpacity 
+          style={[styles.btnPrimary, styles.flexBtn, isSaving && styles.btnDisabled]} 
+          onPress={handleSave}
+          disabled={isSaving}
+        >
+          <View style={styles.saveBtnContent}>
+            {isSaving && <ActivityIndicator size="small" color="#fff" style={styles.inlineSpinner} />}
+            <Text style={styles.btnText}>Save</Text>
+          </View>
         </TouchableOpacity>
       </View>
     </ScrollView>
-  );
-}
-
-function Field({ label, value }: { label: string, value: string | null }) {
-  return (
-    <View style={styles.fieldRow}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <Text style={styles.fieldValue}>{value || "—"}</Text>
-    </View>
-  );
-}
-
-function FieldList({ label, values }: { label: string, values: string[] }) {
-  return (
-    <View style={styles.fieldRow}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <View style={styles.fieldValuesContainer}>
-        {values.length === 0 ? (
-          <Text style={styles.fieldValue}>None</Text>
-        ) : (
-          values.map((v, i) => (
-            <Text key={i} style={styles.fieldValue}>{v}</Text>
-          ))
-        )}
-      </View>
-    </View>
   );
 }
 
@@ -202,23 +464,82 @@ const styles = StyleSheet.create({
     elevation: 2,
     marginBottom: 20,
   },
-  fieldRow: {
-    flexDirection: 'row',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+  fieldGroup: {
+    marginBottom: 15,
   },
-  fieldLabel: {
-    flex: 1,
+  label: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#555',
+    marginBottom: 5,
   },
-  fieldValuesContainer: {
-    flex: 2,
+  input: {
+    borderWidth: 1,
+    borderColor: '#ced4da',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: '#212529',
+    backgroundColor: '#fff',
+    flex: 1,
   },
-  fieldValue: {
-    color: '#111',
-    marginBottom: 2,
+  inputError: {
+    borderColor: '#dc3545',
+  },
+  errorLabel: {
+    color: '#dc3545',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  multilineInput: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  listFieldContainer: {
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f3f5',
+    paddingTop: 15,
+    marginBottom: 10,
+  },
+  listHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  btnAdd: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  btnAddText: {
+    color: '#007bff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  listItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  btnRemove: {
+    padding: 5,
+  },
+  saveBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  inlineSpinner: {
+    marginRight: 4,
+  },
+  btnDisabled: {
+    backgroundColor: '#a2a8b3',
   },
   rawHeader: {
     flexDirection: 'row',

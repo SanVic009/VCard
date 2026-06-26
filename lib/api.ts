@@ -20,8 +20,17 @@ export interface AuthResponse {
   user: UserInfo;
 }
 
-// Request Interceptor: Attach access token
+import NetInfo from '@react-native-community/netinfo';
+import { Alert } from 'react-native';
+
+// Request Interceptor: Check connectivity & attach access token
 api.interceptors.request.use(async (config) => {
+  const state = await NetInfo.fetch();
+  if (state.isConnected === false) {
+    Alert.alert("No internet connection.", "Please try again.");
+    return Promise.reject(new Error("No internet connection. Please try again."));
+  }
+
   const token = await getAccessToken();
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -29,13 +38,26 @@ api.interceptors.request.use(async (config) => {
   return config;
 }, (error) => Promise.reject(error));
 
-// Response Interceptor: Silent refresh on 401
+// Response Interceptor: Silent refresh on 401 and clean error messages
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Handle Network Connection Errors
+    if (error.code === 'ERR_NETWORK' || !error.response) {
+      error.message = "No internet connection. Please try again.";
+      return Promise.reject(error);
+    }
+
+    // Handle Server Errors (5xx)
+    if (error.response.status >= 500) {
+      error.message = "Something went wrong. Please try again.";
+      return Promise.reject(error);
+    }
+
+    // Silent refresh on 401
+    if (error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
@@ -63,6 +85,16 @@ api.interceptors.response.use(
         return Promise.reject(refreshError);
       }
     }
+
+    // Extract structured error message from backend if available
+    if (error.response.data?.error?.message) {
+      error.message = error.response.data.error.message;
+    } else if (error.response.data?.detail) {
+      error.message = typeof error.response.data.detail === 'string' 
+        ? error.response.data.detail 
+        : "Validation failed";
+    }
+
     return Promise.reject(error);
   }
 );

@@ -9,23 +9,42 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPinging, setIsPinging] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const { login, signup } = useAuth();
+  const { trackEvent } = require('../../lib/analytics');
 
   const handleLogin = async () => {
+    setEmailError('');
+    setPasswordError('');
+    let hasError = false;
+
     const sanitizedEmail = email.trim().toLowerCase();
     if (!sanitizedEmail) {
-      Alert.alert('Invalid Email', 'Email address is required.');
-      return;
+      setEmailError('Email address is required.');
+      hasError = true;
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(sanitizedEmail)) {
+        setEmailError('Please enter a valid email address.');
+        hasError = true;
+      }
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(sanitizedEmail)) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address.');
-      return;
+
+    if (!password) {
+      setPasswordError('Password is required.');
+      hasError = true;
+    } else if (password.length < 8) {
+      setPasswordError('Password must be at least 8 characters.');
+      hasError = true;
     }
+
+    if (hasError) return;
 
     try {
       setIsSubmitting(true);
       await login(sanitizedEmail, password);
+      trackEvent('user_logged_in', { method: 'email' });
     } catch (error: any) {
       Alert.alert('Login Failed', error.message);
     } finally {
@@ -34,13 +53,18 @@ export default function LoginScreen() {
   };
 
   const handleDevLogin = async () => {
+    setEmailError('');
+    setPasswordError('');
     try {
       setIsSubmitting(true);
       try {
         await login("test@example.com", "password123");
+        trackEvent('user_logged_in', { method: 'email' });
       } catch (loginError: any) {
         // If login fails (e.g. user does not exist in the new Supabase instance), attempt signup
         await signup("test@example.com", "password123");
+        trackEvent('user_signed_up', { method: 'email' });
+        trackEvent('user_logged_in', { method: 'email' });
       }
     } catch (error: any) {
       Alert.alert('Dev Login Failed', error.message);
@@ -74,20 +98,24 @@ export default function LoginScreen() {
       </View>
 
       <TextInput
-        style={styles.input}
+        style={[styles.input, emailError ? styles.inputError : null]}
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
       />
+      {emailError ? <Text style={styles.errorLabel}>{emailError}</Text> : null}
+
       <TextInput
-        style={styles.input}
+        style={[styles.input, passwordError ? styles.inputError : null]}
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
+      {passwordError ? <Text style={styles.errorLabel}>{passwordError}</Text> : null}
+
       {isSubmitting ? (
         <ActivityIndicator size="large" />
       ) : (
@@ -129,6 +157,16 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
     borderRadius: 5,
+  },
+  inputError: {
+    borderColor: '#dc3545',
+    marginBottom: 5,
+  },
+  errorLabel: {
+    color: '#dc3545',
+    fontSize: 12,
+    marginBottom: 15,
+    marginLeft: 5,
   },
   link: {
     marginTop: 20,

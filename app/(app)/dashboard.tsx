@@ -1,13 +1,41 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Pressable } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Pressable, TextInput } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { FlashList } from '@shopify/flash-list';
 import { CardResponse } from '../../lib/cardsApi';
 import { useCards } from '../../hooks/useCards';
 import * as ImagePicker from 'expo-image-picker';
 import { requestCameraPermission, requestGalleryPermission } from '../../lib/permissions';
 import { processImage } from '../../lib/imageProcessor';
 import { useImageContext } from '../../context/ImageContext';
+import { CardListSkeleton } from '../../components/Skeleton';
+import { trackEvent } from '../../lib/analytics';
+import { mutationState } from '../../lib/mutationState';
+
+interface CardItemProps {
+  item: CardResponse;
+  onPress: (id: string) => void;
+  formatDate: (dateStr: string) => string;
+}
+
+const CardItem = React.memo(({ item, onPress, formatDate }: CardItemProps) => {
+  return (
+    <TouchableOpacity
+      style={styles.cardItem}
+      onPress={() => onPress(item.id)}
+    >
+      <View style={styles.cardInfo}>
+        <Text style={styles.cardName}>{item.name || 'Unknown Name'}</Text>
+        <Text style={styles.cardCompany}>{item.company || 'Unknown Company'}</Text>
+      </View>
+      <View style={styles.cardMeta}>
+        <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
+        <MaterialIcons name="chevron-right" size={20} color="#ccc" />
+      </View>
+    </TouchableOpacity>
+  );
+});
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -17,18 +45,50 @@ export default function DashboardScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isFabOpen, setIsFabOpen] = useState(false);
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  // Debounce search input by 300ms
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
+
+  // Fetch when debounced query changes & track search event
+  useEffect(() => {
+    const runSearch = async () => {
+      const results = await refresh(false, debouncedQuery);
+      if (debouncedQuery.trim().length > 0) {
+        trackEvent('search_performed', {
+          query_length: debouncedQuery.trim().length,
+          result_count: results ? results.length : 0,
+        });
+      }
+    };
+    runSearch();
+  }, [debouncedQuery, refresh]);
+
   useFocusEffect(
     useCallback(() => {
-      refresh(true);
+      if (mutationState.hasMutated) {
+        refresh(true, searchQuery);
+        mutationState.hasMutated = false;
+      }
       setIsFabOpen(false); // Close FAB when returning
-    }, [refresh])
+    }, [refresh, searchQuery])
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refresh();
+    await refresh(true, searchQuery);
     setRefreshing(false);
-  }, [refresh]);
+  }, [refresh, searchQuery]);
 
   const handleImageResult = async (result: ImagePicker.ImagePickerResult) => {
     if (result.canceled || !result.assets || result.assets.length === 0) {
@@ -79,23 +139,65 @@ export default function DashboardScreen() {
     await handleImageResult(result);
   };
 
-  if (loading && !refreshing) {
+  const handleScanFirstCard = () => {
+    Alert.alert(
+      "Scan Card",
+      "Choose an option to scan your card:",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Choose from Gallery", onPress: openGallery },
+        { text: "Take Photo", onPress: openCamera },
+      ]
+    );
+  };
+
+  const formatDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const handlePressCard = useCallback((id: string) => {
+    router.push(`/(app)/card/${id}`);
+  }, [router]);
+
+  const renderItem = useCallback(({ item }: { item: CardResponse }) => (
+    <CardItem
+      item={item}
+      onPress={handlePressCard}
+      formatDate={formatDate}
+    />
+  ), [handlePressCard, formatDate]);
+
+  const renderEmptyState = () => {
+    if (searchQuery.trim().length > 0) {
+      return (
+        <View style={styles.centerEmpty}>
+          <MaterialIcons name="search-off" size={64} color="#ccc" style={{ marginBottom: 10 }} />
+          <Text style={styles.emptyTitle}>No Results</Text>
+          <Text style={styles.emptySubtitle}>No cards match '{searchQuery}'.</Text>
+        </View>
+      );
+    }
+    
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#007bff" />
+      <View style={styles.centerEmpty}>
+        <MaterialIcons name="contact-mail" size={64} color="#007bff" style={{ marginBottom: 15 }} />
+        <Text style={styles.emptyTitle}>No cards yet.</Text>
+        <Text style={styles.emptySubtitle}>Scan your first business card to get started!</Text>
+        <TouchableOpacity style={styles.emptyButton} onPress={handleScanFirstCard}>
+          <Text style={styles.emptyButtonText}>Scan your first card</Text>
+        </TouchableOpacity>
       </View>
     );
-  }
-
-  const renderItem = ({ item }: { item: CardResponse }) => (
-    <TouchableOpacity
-      style={styles.cardItem}
-      onPress={() => router.push(`/(app)/card/${item.id}`)}
-    >
-      <Text style={styles.cardName}>{item.name || 'Unknown Name'}</Text>
-      <Text style={styles.cardCompany}>{item.company || 'Unknown Company'}</Text>
-    </TouchableOpacity>
-  );
+  };
 
   return (
     <View style={styles.container}>
@@ -103,6 +205,23 @@ export default function DashboardScreen() {
       {isFabOpen && (
         <Pressable style={styles.overlay} onPress={() => setIsFabOpen(false)} />
       )}
+
+      {/* Search Bar */}
+      <View style={styles.searchBarContainer}>
+        <MaterialIcons name="search" size={20} color="#888" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search cards by name or company..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+            <MaterialIcons name="close" size={20} color="#888" />
+          </TouchableOpacity>
+        )}
+      </View>
 
       {error && (
         <View style={styles.errorContainer}>
@@ -113,12 +232,12 @@ export default function DashboardScreen() {
         </View>
       )}
 
-      {cards.length === 0 && !error && !loading ? (
-        <View style={styles.center}>
-          <Text style={styles.emptyText}>No cards yet.</Text>
-        </View>
+      {loading ? (
+        <CardListSkeleton />
+      ) : cards.length === 0 && !error ? (
+        renderEmptyState()
       ) : (
-        <FlatList
+        <FlashList
           data={cards}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
@@ -177,33 +296,110 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
+  centerEmpty: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+    marginTop: 60,
+  },
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    margin: 15,
+    marginBottom: 5,
+    paddingHorizontal: 10,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: '100%',
+    fontSize: 15,
+    color: '#333',
+  },
+  clearButton: {
+    padding: 5,
+  },
   listContainer: {
     padding: 15,
-    paddingBottom: 80,
+    paddingBottom: 90,
   },
   cardItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 10,
     marginBottom: 10,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.04,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 1,
+  },
+  cardInfo: {
+    flex: 1,
+    marginRight: 10,
   },
   cardName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
+    color: '#212529',
     marginBottom: 4,
   },
   cardCompany: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: '#6c757d',
   },
-  emptyText: {
-    fontSize: 16,
-    color: '#888',
+  cardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  cardDate: {
+    fontSize: 12,
+    color: '#adb5bd',
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#495057',
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#6c757d',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  emptyButton: {
+    backgroundColor: '#007bff',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    shadowColor: '#007bff',
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  emptyButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
   },
   errorContainer: {
     padding: 15,

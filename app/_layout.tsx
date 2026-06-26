@@ -3,6 +3,7 @@ import { AuthProvider } from '../context/AuthContext';
 import { ImageProvider } from '../context/ImageContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
+import OfflineBanner from '../components/OfflineBanner';
 
 export default function RootLayout() {
   return (
@@ -10,6 +11,7 @@ export default function RootLayout() {
       <AuthProvider>
         <ImageProvider>
           <Slot />
+          <OfflineBanner />
         </ImageProvider>
       </AuthProvider>
     </GestureHandlerRootView>

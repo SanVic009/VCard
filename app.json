@@ -19,7 +19,9 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.frontend",
-      "permissions": ["CAMERA"]
+      "permissions": [
+        "CAMERA"
+      ]
     },
     "web": {
       "output": "static",
@@ -49,7 +51,8 @@
         {
           "photosPermission": "This app accesses your photos to import business cards."
         }
-      ]
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,
