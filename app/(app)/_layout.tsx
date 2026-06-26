@@ -5,9 +5,11 @@ import { DrawerContentScrollView, DrawerItemList, DrawerItem } from 'expo-router
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { useRouter } from 'expo-router';
+import { useImageContext } from '../../context/ImageContext';
 
 function CustomDrawerContent(props: any) {
   const { logout } = useAuth();
+  const { clearSelectedImage } = useImageContext();
   const router = useRouter();
 
   // Get current active route to highlight the correct DrawerItem
@@ -40,6 +42,7 @@ function CustomDrawerContent(props: any) {
           label="Logout"
           icon={({ color, size }) => <MaterialIcons name="logout" color={color} size={size} />}
           onPress={() => {
+            clearSelectedImage();
             logout();
           }}
         />
@@ -82,12 +85,7 @@ export default function AppLayout() {
           title: 'About',
         }}
       />
-      
-      {/* These screens exist in the group but are hidden from the sidebar using href: null */}
-      <Drawer.Screen name="upload" options={{ href: null }} />
-      <Drawer.Screen name="results" options={{ href: null }} />
-      <Drawer.Screen name="card/[id]" options={{ href: null }} />
-      <Drawer.Screen name="card/[id]/edit" options={{ href: null }} />
+
     </Drawer>
   );
 }

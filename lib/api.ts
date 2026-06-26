@@ -54,7 +54,7 @@ api.interceptors.response.use(
 
         // Retry original request with new token
         originalRequest.headers.Authorization = `Bearer ${newAuth.access_token}`;
-        return axios(originalRequest);
+        return api(originalRequest);
         
       } catch (refreshError) {
         // Silent refresh failed

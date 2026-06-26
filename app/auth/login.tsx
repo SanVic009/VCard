@@ -9,12 +9,23 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPinging, setIsPinging] = useState(false);
-  const { login } = useAuth();
+  const { login, signup } = useAuth();
 
   const handleLogin = async () => {
+    const sanitizedEmail = email.trim().toLowerCase();
+    if (!sanitizedEmail) {
+      Alert.alert('Invalid Email', 'Email address is required.');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(sanitizedEmail)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
-      await login(email, password);
+      await login(sanitizedEmail, password);
     } catch (error: any) {
       Alert.alert('Login Failed', error.message);
     } finally {
@@ -25,7 +36,12 @@ export default function LoginScreen() {
   const handleDevLogin = async () => {
     try {
       setIsSubmitting(true);
-      await login("test@example.com", "password123");
+      try {
+        await login("test@example.com", "password123");
+      } catch (loginError: any) {
+        // If login fails (e.g. user does not exist in the new Supabase instance), attempt signup
+        await signup("test@example.com", "password123");
+      }
     } catch (error: any) {
       Alert.alert('Dev Login Failed', error.message);
     } finally {

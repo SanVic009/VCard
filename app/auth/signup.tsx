@@ -10,6 +10,17 @@ export default function SignupScreen() {
   const { signup } = useAuth();
 
   const handleSignup = async () => {
+    const sanitizedEmail = email.trim().toLowerCase();
+    if (!sanitizedEmail) {
+      Alert.alert('Invalid Email', 'Email address is required.');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(sanitizedEmail)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
     if (password.length < 8) {
       Alert.alert('Invalid Password', 'Password must be at least 8 characters long.');
       return;
@@ -17,7 +28,7 @@ export default function SignupScreen() {
     
     try {
       setIsSubmitting(true);
-      await signup(email, password);
+      await signup(sanitizedEmail, password);
     } catch (error: any) {
       Alert.alert('Signup Failed', error.message);
     } finally {
