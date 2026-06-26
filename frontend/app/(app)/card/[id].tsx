@@ -4,10 +4,11 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
 import { useCard } from '../../../hooks/useCard';
 import { deleteCard } from '../../../lib/cardsApi';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { CardDetailSkeleton } from '../../../components/Skeleton';
 import { trackEvent } from '../../../lib/analytics';
 import { mutationState } from '../../../lib/mutationState';
+import * as Linking from 'expo-linking';
 
 export default function CardDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,6 +35,78 @@ export default function CardDetailScreen() {
       });
     } catch {
       return dateStr;
+    }
+  };
+
+  const handleCall = async (phone: string) => {
+    try {
+      const cleaned = phone.replace(/[^\d+]/g, '');
+      const url = `tel:${cleaned}`;
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert("Error", "Could not open call. Please try manually.");
+      }
+    } catch {
+      Alert.alert("Error", "Could not open call. Please try manually.");
+    }
+  };
+
+  const handleSMS = async (phone: string) => {
+    try {
+      const cleaned = phone.replace(/[^\d+]/g, '');
+      const url = `sms:${cleaned}`;
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert("Error", "Could not open SMS. Please try manually.");
+    }
+  };
+
+  const handleWhatsApp = async (phone: string) => {
+    try {
+      const digitsOnly = phone.replace(/\D/g, '');
+      const url = `whatsapp://send?phone=${digitsOnly}`;
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert("WhatsApp is not installed.");
+      }
+    } catch {
+      Alert.alert("Error", "Could not open WhatsApp. Please try manually.");
+    }
+  };
+
+  const handleEmail = async (email: string) => {
+    try {
+      const url = `mailto:${email}`;
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert("Error", "Could not open email. Please try manually.");
+    }
+  };
+
+  const handleWebsite = async (url: string) => {
+    try {
+      let targetUrl = url.trim();
+      if (!/^https?:\/\//i.test(targetUrl)) {
+        targetUrl = `https://${targetUrl}`;
+      }
+      await Linking.openURL(targetUrl);
+    } catch {
+      Alert.alert("Error", "Could not open website. Please try manually.");
+    }
+  };
+
+  const handleAddress = async (address: string) => {
+    try {
+      const companyPart = card?.company && card.company !== '—' ? `${card.company}, ` : '';
+      const query = `${companyPart}${address}`;
+      const url = `geo:0,0?q=${encodeURIComponent(query)}`;
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert("Error", "Could not open maps. Please try manually.");
     }
   };
 
@@ -112,28 +185,96 @@ export default function CardDetailScreen() {
 
         <View style={styles.infoGroup}>
           <Text style={styles.label}>Address</Text>
-          <Text style={styles.value}>{card.address || '—'}</Text>
+          {card.address && card.address !== '—' ? (
+            <View style={styles.actionRowItem}>
+              <Text style={styles.itemValue}>{card.address}</Text>
+              <TouchableOpacity 
+                style={styles.actionButton} 
+                onPress={() => card.address && handleAddress(card.address)}
+                accessibilityLabel="Open in Maps"
+              >
+                <FontAwesome name="map-marker" size={18} color="#dc3545" style={styles.actionIcon} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <Text style={styles.value}>—</Text>
+          )}
         </View>
 
         <View style={styles.infoGroup}>
           <Text style={styles.label}>Emails</Text>
           {card.emails && card.emails.length > 0 ? (
-            card.emails.map((email, idx) => <Text key={idx} style={styles.value}>{email}</Text>)
-          ) : <Text style={styles.value}>None</Text>}
+            card.emails.map((email, idx) => (
+              <View key={idx} style={styles.actionRowItem}>
+                <Text style={styles.itemValue}>{email}</Text>
+                <TouchableOpacity 
+                  style={styles.actionButton} 
+                  onPress={() => handleEmail(email)}
+                  accessibilityLabel="Send email"
+                >
+                  <FontAwesome name="envelope" size={16} color="#e0a800" style={styles.actionIcon} />
+                </TouchableOpacity>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.value}>None</Text>
+          )}
         </View>
 
         <View style={styles.infoGroup}>
           <Text style={styles.label}>Phones</Text>
           {card.phones && card.phones.length > 0 ? (
-            card.phones.map((phone, idx) => <Text key={idx} style={styles.value}>{phone}</Text>)
-          ) : <Text style={styles.value}>None</Text>}
+            card.phones.map((phone, idx) => (
+              <View key={idx} style={styles.actionRowItem}>
+                <Text style={styles.itemValue}>{phone}</Text>
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity 
+                    style={styles.actionButton} 
+                    onPress={() => handleCall(phone)}
+                    accessibilityLabel="Call phone number"
+                  >
+                    <FontAwesome name="phone" size={18} color="#007bff" style={styles.actionIcon} />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.actionButton} 
+                    onPress={() => handleSMS(phone)}
+                    accessibilityLabel="Send SMS"
+                  >
+                    <FontAwesome name="comment" size={18} color="#28a745" style={styles.actionIcon} />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.actionButton} 
+                    onPress={() => handleWhatsApp(phone)}
+                    accessibilityLabel="Chat on WhatsApp"
+                  >
+                    <FontAwesome name="whatsapp" size={20} color="#25D366" style={styles.actionIcon} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.value}>None</Text>
+          )}
         </View>
 
         <View style={styles.infoGroup}>
           <Text style={styles.label}>Websites</Text>
           {card.websites && card.websites.length > 0 ? (
-            card.websites.map((web, idx) => <Text key={idx} style={styles.value}>{web}</Text>)
-          ) : <Text style={styles.value}>None</Text>}
+            card.websites.map((web, idx) => (
+              <View key={idx} style={styles.actionRowItem}>
+                <Text style={styles.itemValue}>{web}</Text>
+                <TouchableOpacity 
+                  style={styles.actionButton} 
+                  onPress={() => handleWebsite(web)}
+                  accessibilityLabel="Open website"
+                >
+                  <FontAwesome name="globe" size={18} color="#17a2b8" style={styles.actionIcon} />
+                </TouchableOpacity>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.value}>None</Text>
+          )}
         </View>
 
         <View style={styles.metaSection}>
@@ -210,6 +351,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#212529',
     fontWeight: '500',
+  },
+  actionRowItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  itemValue: {
+    fontSize: 16,
+    color: '#212529',
+    fontWeight: '500',
+    flex: 1,
+    marginRight: 10,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  actionButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 22,
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  actionIcon: {
+    textAlign: 'center',
   },
   metaSection: {
     marginTop: 15,
