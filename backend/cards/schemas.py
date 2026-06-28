@@ -16,8 +16,16 @@ class CardBase(BaseModel):
 class CardCreate(CardBase):
     pass
 
-class CardUpdate(CardBase):
-    pass
+class CardUpdate(BaseModel):
+    name: Optional[str] = None
+    title: Optional[str] = None
+    company: Optional[str] = None
+    address: Optional[str] = None
+    emails: Optional[List[str]] = None
+    phones: Optional[List[str]] = None
+    websites: Optional[List[str]] = None
+    image_url: Optional[str] = None
+    raw_extraction: Optional[str] = None
 
 class CardResponse(CardBase):
     id: str

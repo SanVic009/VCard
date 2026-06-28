@@ -171,7 +171,35 @@ export default function CardDetailScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Drawer.Screen options={{ title: card.name || 'Card Details' }} />
+      <Drawer.Screen 
+        options={{ 
+          title: card.name || 'Card Details',
+          headerRight: () => (
+            <View style={styles.headerRightContainer}>
+              <TouchableOpacity 
+                onPress={() => router.push(`/(app)/card/${card.id}/edit`)} 
+                style={styles.headerRightBtn}
+                disabled={isDeleting}
+                accessibilityLabel="Edit card"
+              >
+                <MaterialIcons name="edit" size={24} color="#007bff" />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={handleDelete} 
+                style={styles.headerRightBtn}
+                disabled={isDeleting}
+                accessibilityLabel="Delete card"
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#dc3545" />
+                ) : (
+                  <MaterialIcons name="delete" size={24} color="#dc3545" />
+                )}
+              </TouchableOpacity>
+            </View>
+          )
+        }} 
+      />
       
       <View style={styles.cardInfo}>
         <View style={styles.infoGroup}>
@@ -298,27 +326,6 @@ export default function CardDetailScreen() {
           <Text style={styles.metaText}>Updated: {formatDate(card.updated_at)}</Text>
         </View>
       </View>
-
-      <View style={styles.actions}>
-        <TouchableOpacity 
-          style={[styles.btn, styles.editBtn]} 
-          onPress={() => router.push(`/(app)/card/${card.id}/edit`)}
-          disabled={isDeleting}
-        >
-          <Text style={styles.btnText}>Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.btn, styles.delBtn]} 
-          onPress={handleDelete}
-          disabled={isDeleting}
-        >
-          {isDeleting ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.btnText}>Delete</Text>
-          )}
-        </TouchableOpacity>
-      </View>
     </ScrollView>
   );
 }
@@ -359,14 +366,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#868e96',
+    color: '#212529',
     textTransform: 'uppercase',
     marginBottom: 4,
   },
   value: {
     fontSize: 16,
-    color: '#212529',
-    fontWeight: '500',
+    color: '#868e96',
+    fontWeight: 'normal',
   },
   companyLinkBtn: {
     flexDirection: 'row',
@@ -392,8 +399,8 @@ const styles = StyleSheet.create({
   },
   itemValue: {
     fontSize: 16,
-    color: '#212529',
-    fontWeight: '500',
+    color: '#868e96',
+    fontWeight: 'normal',
     flex: 1,
     marginRight: 10,
   },
@@ -443,26 +450,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 15,
   },
-  actions: {
+  headerRightContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 15,
     gap: 15,
   },
-  btn: {
-    flex: 1,
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  editBtn: {
-    backgroundColor: '#007bff',
-  },
-  delBtn: {
-    backgroundColor: '#dc3545',
-  },
-  btnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+  headerRightBtn: {
+    padding: 5,
   }
 });
