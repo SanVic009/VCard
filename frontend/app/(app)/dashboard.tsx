@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Ref
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
-import { CardResponse } from '../../lib/cardsApi';
+import { CardResponse, deleteCard } from '../../lib/cardsApi';
 import { useCards } from '../../hooks/useCards';
 import * as ImagePicker from 'expo-image-picker';
 import { requestCameraPermission, requestGalleryPermission } from '../../lib/permissions';
@@ -16,22 +16,36 @@ import { mutationState } from '../../lib/mutationState';
 interface CardItemProps {
   item: CardResponse;
   onPress: (id: string) => void;
+  onLongPress?: (id: string) => void;
+  isSelectMode?: boolean;
+  isSelected?: boolean;
   formatDate: (dateStr: string) => string;
 }
 
-const CardItem = React.memo(({ item, onPress, formatDate }: CardItemProps) => {
+const CardItem = React.memo(({ item, onPress, onLongPress, isSelectMode, isSelected, formatDate }: CardItemProps) => {
   return (
     <TouchableOpacity
-      style={styles.cardItem}
+      style={[styles.cardItem, isSelected && styles.cardItemSelected]}
       onPress={() => onPress(item.id)}
+      onLongPress={() => onLongPress && onLongPress(item.id)}
+      activeOpacity={0.7}
     >
+      {isSelectMode && (
+        <View style={styles.checkboxContainer}>
+          <MaterialIcons
+            name={isSelected ? "check-box" : "check-box-outline-blank"}
+            size={24}
+            color={isSelected ? "#007bff" : "#adb5bd"}
+          />
+        </View>
+      )}
       <View style={styles.cardInfo}>
         <Text style={styles.cardName}>{item.name || 'Unknown Name'}</Text>
         <Text style={styles.cardCompany}>{item.company || 'Unknown Company'}</Text>
       </View>
       <View style={styles.cardMeta}>
         <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
-        <MaterialIcons name="chevron-right" size={20} color="#ccc" />
+        {!isSelectMode && <MaterialIcons name="chevron-right" size={20} color="#ccc" />}
       </View>
     </TouchableOpacity>
   );
@@ -44,6 +58,10 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isFabOpen, setIsFabOpen] = useState(false);
+
+  // Multi-select state
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -288,16 +306,78 @@ export default function DashboardScreen() {
   };
 
   const handlePressCard = useCallback((id: string) => {
-    router.push(`/(app)/card/${id}`);
-  }, [router]);
+    if (isSelectMode) {
+      setSelectedCardIds(prev => 
+        prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+      );
+    } else {
+      router.push(`/(app)/card/${id}`);
+    }
+  }, [isSelectMode, router]);
+
+  const handleLongPressCard = useCallback((id: string) => {
+    if (!isSelectMode) {
+      setIsSelectMode(true);
+      setSelectedCardIds([id]);
+    }
+  }, [isSelectMode]);
+
+  const handleCancelSelectMode = () => {
+    setIsSelectMode(false);
+    setSelectedCardIds([]);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedCardIds.length === processedCards.length) {
+      setSelectedCardIds([]);
+    } else {
+      setSelectedCardIds(processedCards.map(c => c.id));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedCardIds.length === 0) return;
+    
+    Alert.alert(
+      "Delete Cards",
+      `Are you sure you want to delete the ${selectedCardIds.length} selected card(s)? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsProcessing(true);
+              // Delete all in parallel
+              await Promise.all(selectedCardIds.map(id => deleteCard(id)));
+              // Refresh cards list
+              await refresh(true);
+              // Reset select mode
+              setIsSelectMode(false);
+              setSelectedCardIds([]);
+              Alert.alert("Success", "Selected card(s) have been deleted.");
+            } catch (err: any) {
+              Alert.alert("Error", err.message || "Failed to delete selected card(s).");
+            } finally {
+              setIsProcessing(false);
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const renderItem = useCallback(({ item }: { item: CardResponse }) => (
     <CardItem
       item={item}
       onPress={handlePressCard}
+      onLongPress={handleLongPressCard}
+      isSelectMode={isSelectMode}
+      isSelected={selectedCardIds.includes(item.id)}
       formatDate={formatDate}
     />
-  ), [handlePressCard, formatDate]);
+  ), [handlePressCard, handleLongPressCard, isSelectMode, selectedCardIds, formatDate]);
 
   const renderEmptyState = () => {
     if (searchQuery.trim().length > 0) {
@@ -341,35 +421,60 @@ export default function DashboardScreen() {
         <Pressable style={styles.overlay} onPress={() => setIsFabOpen(false)} />
       )}
 
-      {/* Search and Sort/Filter Row */}
-      <View style={styles.searchRow}>
-        <View style={styles.searchBarContainer}>
-          <MaterialIcons name="search" size={20} color="#888" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search name or company..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
-              <MaterialIcons name="close" size={20} color="#888" />
+      {/* Search and Sort/Filter Row or Selection Action Bar */}
+      {isSelectMode ? (
+        <View style={styles.selectActionBar}>
+          <View style={styles.selectActionLeft}>
+            <TouchableOpacity onPress={handleCancelSelectMode} style={styles.selectActionBtn}>
+              <MaterialIcons name="close" size={24} color="#333" />
             </TouchableOpacity>
-          )}
+            <Text style={styles.selectCountText}>{selectedCardIds.length} selected</Text>
+          </View>
+          <View style={styles.selectActionRight}>
+            <TouchableOpacity onPress={handleSelectAll} style={styles.selectAllBtn}>
+              <Text style={styles.selectAllBtnText}>
+                {selectedCardIds.length === processedCards.length ? "Deselect All" : "Select All"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={handleDeleteSelected} 
+              style={[styles.deleteBtn, selectedCardIds.length === 0 && styles.deleteBtnDisabled]}
+              disabled={selectedCardIds.length === 0}
+            >
+              <MaterialIcons name="delete" size={24} color={selectedCardIds.length === 0 ? "#adb5bd" : "#dc3545"} />
+            </TouchableOpacity>
+          </View>
         </View>
-        <TouchableOpacity 
-          style={[styles.filterButton, (filterActive || sortBy !== 'created_desc') && styles.filterButtonActive]} 
-          onPress={() => setShowFilterModal(true)}
-          accessibilityLabel="Sort and filter cards"
-        >
-          <MaterialIcons 
-            name="tune" 
-            size={22} 
-            color={(filterActive || sortBy !== 'created_desc') ? '#fff' : '#495057'} 
-          />
-        </TouchableOpacity>
-      </View>
+      ) : (
+        <View style={styles.searchRow}>
+          <View style={styles.searchBarContainer}>
+            <MaterialIcons name="search" size={20} color="#888" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search name or company..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+                <MaterialIcons name="close" size={20} color="#888" />
+              </TouchableOpacity>
+            )}
+          </View>
+          <TouchableOpacity 
+            style={[styles.filterButton, (filterActive || sortBy !== 'created_desc') && styles.filterButtonActive]} 
+            onPress={() => setShowFilterModal(true)}
+            accessibilityLabel="Sort and filter cards"
+          >
+            <MaterialIcons 
+              name="tune" 
+              size={22} 
+              color={(filterActive || sortBy !== 'created_desc') ? '#fff' : '#495057'} 
+            />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {error && (
         <View style={styles.errorContainer}>
@@ -395,7 +500,7 @@ export default function DashboardScreen() {
       )}
 
       {/* Speed Dial Actions */}
-      {isFabOpen && !isProcessing && (
+      {!isSelectMode && isFabOpen && !isProcessing && (
         <View style={styles.speedDialContainer}>
           <View style={styles.actionRow}>
             <Text style={styles.actionLabel}>Gallery</Text>
@@ -413,17 +518,19 @@ export default function DashboardScreen() {
       )}
 
       {/* Main FAB */}
-      <TouchableOpacity 
-        style={[styles.fab, isFabOpen && styles.fabOpen]} 
-        onPress={() => setIsFabOpen(!isFabOpen)}
-        disabled={isProcessing}
-      >
-        {isProcessing ? (
-          <ActivityIndicator color="#fff" size="small" />
-        ) : (
-          <MaterialIcons name={isFabOpen ? "close" : "add"} size={28} color="#fff" />
-        )}
-      </TouchableOpacity>
+      {!isSelectMode && (
+        <TouchableOpacity 
+          style={[styles.fab, isFabOpen && styles.fabOpen]} 
+          onPress={() => setIsFabOpen(!isFabOpen)}
+          disabled={isProcessing}
+        >
+          {isProcessing ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <MaterialIcons name={isFabOpen ? "close" : "add"} size={28} color="#fff" />
+          )}
+        </TouchableOpacity>
+      )}
 
       {/* Sort & Filter Modal */}
       <Modal
@@ -892,5 +999,69 @@ const styles = StyleSheet.create({
   },
   fabOpen: {
     backgroundColor: '#dc3545',
+  },
+  selectActionBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  selectActionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  selectActionRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  selectActionBtn: {
+    padding: 4,
+  },
+  selectCountText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#212529',
+  },
+  selectAllBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: '#f1f3f5',
+  },
+  selectAllBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#007bff',
+  },
+  deleteBtn: {
+    padding: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteBtnDisabled: {
+    opacity: 0.5,
+  },
+  cardItemSelected: {
+    backgroundColor: '#f1f7fc',
+    borderColor: '#007bff',
+    borderWidth: 1,
+  },
+  checkboxContainer: {
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   }
 });
