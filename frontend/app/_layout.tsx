@@ -7,10 +7,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, LogBox } from 'react-native';
 import OfflineBanner from '../components/OfflineBanner';
 import axios from 'axios';
+import { API_URL } from '../lib/api';
 
 LogBox.ignoreLogs(['InteractionManager has been deprecated']);
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function RootLayout() {
   useEffect(() => {
@@ -25,8 +24,8 @@ export default function RootLayout() {
     // Initial ping
     pingServer();
 
-    // Set up 4-minute interval ping
-    const intervalId = setInterval(pingServer, 4 * 60 * 1000);
+    // Set up 30-second interval ping (half minute) to prevent Render server sleep
+    const intervalId = setInterval(pingServer, 30 * 1000);
 
     return () => clearInterval(intervalId);
   }, []);

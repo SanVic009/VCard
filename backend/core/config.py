@@ -19,8 +19,8 @@ class Settings(BaseSettings):
     def validate_origins(self) -> 'Settings':
         if self.environment == "production":
             origins_str = (self.allowed_origins or "").strip()
-            if not origins_str or origins_str == "*":
-                raise ValueError("ALLOWED_ORIGINS must be explicitly configured in production environment (cannot be empty or '*')")
+            if not origins_str:
+                raise ValueError("ALLOWED_ORIGINS must be explicitly configured in production environment (cannot be empty)")
         return self
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
