@@ -137,8 +137,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             activePollsRef.current[cardId] = setTimeout(poll, nextDelay);
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error polling enrichment status:', err);
+        const status = err.response?.status;
+        if (status === 401 || status === 403) {
+          stopPolling(cardId);
+          showToast({ message: 'Session expired. Please log in again.' });
+          return;
+        }
         elapsed += currentDelay;
         if (elapsed >= maxDuration) {
           stopPolling(cardId);

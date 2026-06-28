@@ -52,7 +52,7 @@ export default function SignupScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sign Up</Text>
+      <Text style={styles.title}>VCard</Text>
       <TextInput
         style={[styles.input, emailError ? styles.inputError : null]}
         placeholder="Email"

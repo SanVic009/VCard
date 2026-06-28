@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
@@ -27,6 +27,38 @@ export default function CardDetailScreen() {
       refresh();
     }, [refresh])
   );
+
+  useEffect(() => {
+    if (!card || card.company_id) return;
+
+    let currentDelay = 2000;      // Start with 2 seconds
+    const maxDelay = 10000;       // Max backoff delay is 10 seconds
+    const maxDuration = 45000;    // Timeout after 45 seconds
+    let elapsed = 0;
+    let timeoutId: any = null;
+
+    const poll = async () => {
+      try {
+        await refresh();
+      } catch (err: any) {
+        console.error("Failed to poll card update:", err);
+        const status = err.response?.status;
+        if (status === 401 || status === 403) {
+          return; // Stop polling immediately
+        }
+      }
+
+      elapsed += currentDelay;
+      if (elapsed < maxDuration) {
+        const nextDelay = currentDelay;
+        currentDelay = Math.min(currentDelay * 2, maxDelay);
+        timeoutId = setTimeout(poll, nextDelay);
+      }
+    };
+
+    timeoutId = setTimeout(poll, currentDelay);
+    return () => clearTimeout(timeoutId);
+  }, [card?.id, card?.company_id, refresh]);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return 'N/A';

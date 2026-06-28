@@ -40,17 +40,9 @@ def run_enrichment_task(card_id: str, repo: EnrichmentRepository, service: Enric
         
         if existing_company:
             company_id = existing_company["id"]
-            # If the matched company completed successfully, we reuse it and return
-            if existing_company.get("enrichment_status") == "completed":
-                logger.info(f"Deduplication match found. Reusing completed company {company_id}")
-                repo.link_card_to_company(card_id, company_id)
-                return
-            
-            # If matched company is failed (or pending), we retry enrichment
-            logger.info(f"Deduplication match found. Reusing company {company_id} but status is {existing_company.get('enrichment_status')}. Retrying enrichment.")
+            logger.info(f"Deduplication match found. Reusing existing company {company_id} and skipping search.")
             repo.link_card_to_company(card_id, company_id)
-            # Update status back to pending to allow retry
-            repo.supabase.table("companies").update({"enrichment_status": "pending", "enrichment_error": None}).eq("id", company_id).execute()
+            return
         else:
             # 4. If new: insert companies row (status: pending), link card → company
             company = repo.create_pending_company(company_name, primary_website)

@@ -68,7 +68,7 @@ export default function AppLayout() {
         name="dashboard"
         options={{
           drawerLabel: 'Dashboard',
-          title: 'Dashboard',
+          title: 'VCard',
         }}
       />
       <Drawer.Screen

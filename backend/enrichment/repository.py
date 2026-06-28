@@ -20,14 +20,34 @@ class EnrichmentRepository:
             return res.data[0]
         return None
 
+    def normalize_website(self, url: str) -> str:
+        if not url:
+            return ""
+        url = url.strip().lower()
+        # Remove scheme
+        if url.startswith("https://"):
+            url = url[8:]
+        elif url.startswith("http://"):
+            url = url[7:]
+        # Remove www.
+        if url.startswith("www."):
+            url = url[4:]
+        # Remove trailing slash and paths
+        url = url.split("/")[0]
+        return url
+
     def find_existing_company(self, websites: list[str], company_name: Optional[str]) -> Optional[Dict[str, Any]]:
-        # Match by website first (exact match on companies.website)
+        # Match by website first (normalized match)
         card_website = websites[0].strip() if websites and len(websites) > 0 and websites[0] else None
         if card_website:
-            res = self.supabase.table("companies").select("*").eq("website", card_website).execute()
-            if res.data:
-                logger.info(f"Deduplication match found by website: {card_website}")
-                return res.data[0]
+            normalized_card = self.normalize_website(card_website)
+            if normalized_card:
+                res = self.supabase.table("companies").select("*").execute()
+                for company in res.data:
+                    comp_web = company.get("website")
+                    if comp_web and self.normalize_website(comp_web) == normalized_card:
+                        logger.info(f"Deduplication match found by website domain: {comp_web} == {card_website}")
+                        return company
                 
         # If no website on the card, or no website match, match by name (case-insensitive exact match on companies.name)
         if company_name and company_name.strip():

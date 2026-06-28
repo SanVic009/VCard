@@ -8,7 +8,7 @@ import { getCompanyDetail, CompanyDetail, enrichCard } from '../../../lib/enrich
 export default function CompanyDetailScreen() {
   const { id, cardId } = useLocalSearchParams<{ id: string; cardId?: string }>();
   const router = useRouter();
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [company, setCompany] = useState<CompanyDetail | null>(null);
@@ -21,7 +21,12 @@ export default function CompanyDetailScreen() {
       const data = await getCompanyDetail(id as string);
       setCompany(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch company details.');
+      const status = err.response?.status;
+      if (status === 401 || status === 403) {
+        setError('Unauthorized: Please log in again.');
+      } else {
+        setError(err.message || 'Failed to fetch company details.');
+      }
     } finally {
       setLoading(false);
     }
@@ -33,6 +38,44 @@ export default function CompanyDetailScreen() {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (!company || company.enrichment_status !== 'pending') return;
+
+    let currentDelay = 2000;      // Start with 2 seconds
+    const maxDelay = 8000;        // Max backoff delay is 8 seconds
+    const maxDuration = 45000;    // Timeout after 45 seconds
+    let elapsed = 0;
+    let timeoutId: any = null;
+
+    const poll = async () => {
+      try {
+        const updatedCompany = await getCompanyDetail(id as string);
+        setCompany(updatedCompany);
+        
+        if (updatedCompany.enrichment_status !== 'pending') {
+          return; // Stop polling
+        }
+      } catch (err: any) {
+        console.error("Error polling company details:", err);
+        const status = err.response?.status;
+        if (status === 401 || status === 403) {
+          setError('Unauthorized: Please log in again.');
+          return; // Stop polling immediately
+        }
+      }
+
+      elapsed += currentDelay;
+      if (elapsed < maxDuration) {
+        const nextDelay = currentDelay;
+        currentDelay = Math.min(currentDelay * 2, maxDelay);
+        timeoutId = setTimeout(poll, nextDelay);
+      }
+    };
+
+    timeoutId = setTimeout(poll, currentDelay);
+    return () => clearTimeout(timeoutId);
+  }, [company?.id, company?.enrichment_status]);
+
   const handleRetry = async () => {
     const targetCardId = cardId || company?.card_id;
     if (!targetCardId) {
@@ -43,7 +86,7 @@ export default function CompanyDetailScreen() {
       setRetrying(true);
       setError(null);
       await enrichCard(targetCardId);
-      
+
       // Temporarily mark status as pending in UI while it runs
       if (company) {
         setCompany({
@@ -58,21 +101,26 @@ export default function CompanyDetailScreen() {
       const maxPollDelay = 8000;    // Max backoff delay is 8 seconds
       let totalElapsed = 0;
       const maxPollDuration = 45000; // Timeout after 45 seconds
-      
+
       let timeoutId: any = null;
-      
+
       const poll = async () => {
         try {
           const updatedCompany = await getCompanyDetail(id as string);
           setCompany(updatedCompany);
-          
+
           if (updatedCompany.enrichment_status !== 'pending') {
             return; // Stop polling since it completed or failed
           }
-        } catch (pollErr) {
+        } catch (pollErr: any) {
           console.error("Polling error:", pollErr);
+          const status = pollErr.response?.status;
+          if (status === 401 || status === 403) {
+            setError('Unauthorized: Please log in again.');
+            return; // Stop polling immediately
+          }
         }
-        
+
         totalElapsed += currentDelay;
         if (totalElapsed < maxPollDuration) {
           const nextDelay = currentDelay;
@@ -80,7 +128,7 @@ export default function CompanyDetailScreen() {
           timeoutId = setTimeout(poll, nextDelay);
         }
       };
-      
+
       timeoutId = setTimeout(poll, currentDelay);
 
     } catch (err: any) {
@@ -134,8 +182,8 @@ export default function CompanyDetailScreen() {
             </TouchableOpacity>
 
             {targetCardId ? (
-              <TouchableOpacity 
-                style={[styles.btnRetry, retrying && styles.btnDisabled]} 
+              <TouchableOpacity
+                style={[styles.btnRetry, retrying && styles.btnDisabled]}
                 onPress={handleRetry}
                 disabled={retrying}
               >
@@ -173,17 +221,17 @@ export default function CompanyDetailScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Drawer.Screen options={{ title: company.name || 'Company Details' }} />
-      
+
       {/* Header Profile Section */}
       <View style={styles.headerCard}>
         <View style={styles.logoPlaceholder}>
           <FontAwesome name="building" size={32} color="#00E676" />
         </View>
         <Text style={styles.companyName}>{company.name || '—'}</Text>
-        
+
         {company.website ? (
-          <TouchableOpacity 
-            style={styles.websiteBtn} 
+          <TouchableOpacity
+            style={styles.websiteBtn}
             onPress={() => company.website && handleOpenWebsite(company.website)}
           >
             <FontAwesome name="globe" size={14} color="#00E676" style={{ marginRight: 6 }} />

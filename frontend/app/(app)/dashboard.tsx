@@ -197,7 +197,7 @@ export default function DashboardScreen() {
       );
       
       setSelectedImages(processedImages);
-      router.push('/(app)/preview');
+      router.push('/(app)/review');
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to process image.");
     } finally {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, PanResponder, Dimensions, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Drawer } from 'expo-router/drawer';
 import { useImageContext } from '../../context/ImageContext';
 import { cropImage, SelectedImage } from '../../lib/imageProcessor';
 
@@ -8,7 +9,7 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const maxCropWidth = screenWidth - 24;
 const maxCropHeight = screenHeight * 0.48;
 
-export default function PreviewScreen() {
+export default function ReviewScreen() {
   const router = useRouter();
   const { selectedImages, setSelectedImages } = useImageContext();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -191,7 +192,7 @@ export default function PreviewScreen() {
       );
 
       setSelectedImages(croppedImages);
-      router.push('/(app)/results');
+      router.push('/(app)/confirm');
     } catch (error: any) {
       console.error(error);
     } finally {
@@ -206,7 +207,7 @@ export default function PreviewScreen() {
   if (!selectedImages || selectedImages.length === 0 || cropBoxes.length === 0) {
     return (
       <View style={styles.container}>
-        <Text style={{ color: '#fff' }}>No image to preview.</Text>
+        <Text style={{ color: '#fff' }}>No image to review.</Text>
       </View>
     );
   }
@@ -215,10 +216,11 @@ export default function PreviewScreen() {
 
   return (
     <View style={styles.container}>
+      <Drawer.Screen options={{ title: 'VCard' }} />
       {isCropping && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#007bff" />
-          <Text style={styles.loadingText}>Cropping card images...</Text>
+          <Text style={styles.loadingText}>Processing card images...</Text>
         </View>
       )}
 

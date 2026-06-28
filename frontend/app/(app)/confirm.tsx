@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Drawer } from 'expo-router/drawer';
 import { useImageContext } from '../../context/ImageContext';
 import * as FileSystem from 'expo-file-system/legacy';
 import { extractBusinessCard, ExtractionData } from '../../lib/extractionApi';
@@ -10,7 +11,6 @@ import { trackEvent } from '../../lib/analytics';
 import { mutationState } from '../../lib/mutationState';
 import { enrichCard } from '../../lib/enrichmentApi';
 import { useToast } from '../../context/ToastContext';
-
 
 interface ListFieldProps {
   label: string;
@@ -67,16 +67,14 @@ function ListField({
   );
 }
 
-export default function ResultsScreen() {
+export default function ConfirmScreen() {
   const router = useRouter();
   const { pollEnrichmentStatus } = useToast();
   const { selectedImages, clearSelectedImages } = useImageContext();
 
-  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<ExtractionData | null>(null);
-
 
   // Editable form fields state
   const [name, setName] = useState('');
@@ -331,7 +329,8 @@ export default function ResultsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Review & Edit Card</Text>
+      <Drawer.Screen options={{ title: 'VCard' }} />
+      <Text style={styles.title}>VCard</Text>
       
       <View style={styles.card}>
         <View style={styles.fieldGroup}>
@@ -406,8 +405,6 @@ export default function ResultsScreen() {
           onRemove={handleRemoveWebsite}
         />
       </View>
-
-
 
       <View style={styles.actionRow}>
         <TouchableOpacity 
@@ -555,7 +552,6 @@ const styles = StyleSheet.create({
   btnDisabled: {
     backgroundColor: '#a2a8b3',
   },
-
   actionRow: {
     flexDirection: 'row',
     gap: 15,
