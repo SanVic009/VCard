@@ -220,48 +220,7 @@ export default function DashboardScreen() {
       return;
     }
 
-    const firstAsset = result1.assets[0];
-
-    // Wrap in setTimeout to ensure the camera activity transitions fully
-    // and returns focus to the app before displaying the Alert dialog
-    setTimeout(() => {
-      Alert.alert(
-        "Scan Second Side?",
-        "Would you like to scan a second side (e.g., the back of the business card)?",
-        [
-          {
-            text: "No, Proceed",
-            onPress: async () => {
-              await handleImageResult(result1);
-            }
-          },
-          {
-            text: "Yes, Take Photo",
-            onPress: async () => {
-              // Add a short delay before launching the camera again to allow the Alert to close
-              setTimeout(async () => {
-                const result2 = await ImagePicker.launchCameraAsync({
-                  mediaTypes: ['images'],
-                  allowsEditing: false,
-                  quality: 1,
-                });
-                
-                if (result2.canceled || !result2.assets || result2.assets.length === 0) {
-                  await handleImageResult(result1);
-                } else {
-                  const combinedResult: ImagePicker.ImagePickerResult = {
-                    canceled: false,
-                    assets: [firstAsset, result2.assets[0]],
-                  };
-                  await handleImageResult(combinedResult);
-                }
-              }, 300);
-            }
-          }
-        ],
-        { cancelable: false }
-      );
-    }, 600);
+    await handleImageResult(result1);
   };
 
   const openGallery = async () => {
