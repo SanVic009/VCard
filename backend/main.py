@@ -10,7 +10,9 @@ from slowapi.errors import RateLimitExceeded
 from auth.router import router as auth_router, limiter
 from cards.router import router as cards_router
 from extraction.router import router as extraction_router
+from enrichment.router import router as enrichment_router
 from database import engine, Base, USE_LOCAL_AUTH
+
 from auth.dependencies import get_supabase
 from core.exceptions import (
     AuthenticationError,
@@ -92,7 +94,9 @@ async def log_requests(request: Request, call_next):
 app.include_router(auth_router)
 app.include_router(cards_router)
 app.include_router(extraction_router, prefix="/extraction", tags=["Extraction"])
+app.include_router(enrichment_router)
 
 @app.get("/")
 def read_root():
+
     return {"status": "ok", "auth_mode": "local" if USE_LOCAL_AUTH else "supabase"}

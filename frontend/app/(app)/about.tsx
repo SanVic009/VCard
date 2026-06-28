@@ -9,14 +9,14 @@ export default function AboutScreen() {
         <View style={styles.logoIcon}>
           <MaterialIcons name="contact-phone" size={48} color="#007bff" />
         </View>
-        <Text style={styles.appName}>Antigravity Scanner</Text>
+        <Text style={styles.appName}>VCard</Text>
         <Text style={styles.appVersion}>Version 1.0.0 (Production)</Text>
       </View>
 
       <View style={styles.infoCard}>
         <Text style={styles.cardTitle}>About the App</Text>
         <Text style={styles.cardText}>
-          Antigravity Scanner is a premium business card reader app powered by local edge AI processing and Supabase cloud synchronization. It instantly scans physical cards, extracts key contact details using state-of-the-art Gemma models, and organizes your contacts seamlessly.
+          VCard is a premium business card reader app powered by local edge AI processing and Supabase cloud synchronization. It instantly scans physical cards, extracts key contact details using state-of-the-art Gemma models, and organizes your contacts seamlessly.
         </Text>
       </View>
 

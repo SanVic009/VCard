@@ -187,7 +187,17 @@ export default function CardDetailScreen() {
         <View style={styles.infoGroup}>
           <Text style={styles.label}>Company</Text>
           <Text style={styles.value}>{card.company || '—'}</Text>
+          {card.company_id ? (
+            <TouchableOpacity 
+              style={styles.companyLinkBtn} 
+              onPress={() => router.push(`/(app)/company/${card.company_id}?cardId=${card.id}` as any)}
+            >
+              <FontAwesome name="building-o" size={14} color="#007bff" style={{ marginRight: 6 }} />
+              <Text style={styles.companyLinkText}>View Company Details</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
+
 
         <View style={styles.infoGroup}>
           <Text style={styles.label}>Address</Text>
@@ -358,6 +368,22 @@ const styles = StyleSheet.create({
     color: '#212529',
     fontWeight: '500',
   },
+  companyLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    backgroundColor: 'rgba(0, 123, 255, 0.05)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  companyLinkText: {
+    color: '#007bff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
   actionRowItem: {
     flexDirection: 'row',
     alignItems: 'center',

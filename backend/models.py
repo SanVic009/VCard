@@ -12,6 +12,25 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
 
+class Company(Base):
+    __tablename__ = "companies"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    name = Column(Text, nullable=True, index=True)
+    website = Column(Text, nullable=True, index=True)
+    location = Column(Text, nullable=True)
+
+    products = Column(JSONB, nullable=False, server_default='[]')
+    services = Column(JSONB, nullable=False, server_default='[]')
+    technologies = Column(JSONB, nullable=False, server_default='[]')
+    raw_data = Column(JSONB, nullable=True)
+
+    enrichment_status = Column(Text, nullable=False, default="pending")
+    enrichment_error = Column(Text, nullable=True)
+
 class BusinessCard(Base):
     __tablename__ = "business_cards"
     
@@ -30,3 +49,6 @@ class BusinessCard(Base):
     phones = Column(JSONB, nullable=False, server_default='[]')
     websites = Column(JSONB, nullable=False, server_default='[]')
     raw_extraction = Column(Text, nullable=True)
+    
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+

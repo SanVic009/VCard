@@ -11,6 +11,7 @@ class CardBase(BaseModel):
     phones: List[str] = []
     websites: List[str] = []
     image_url: Optional[str] = None
+    raw_extraction: Optional[str] = None
 
 class CardCreate(CardBase):
     pass
@@ -24,8 +25,11 @@ class CardResponse(CardBase):
     created_at: datetime
     updated_at: datetime
     image_url: Optional[str] = None
+    company_id: Optional[str] = None
+    raw_extraction: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class CardListResponse(BaseModel):
     cards: List[CardResponse]

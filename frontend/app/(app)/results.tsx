@@ -8,6 +8,9 @@ import { createCard } from '../../lib/cardsApi';
 import { MaterialIcons } from '@expo/vector-icons';
 import { trackEvent } from '../../lib/analytics';
 import { mutationState } from '../../lib/mutationState';
+import { enrichCard } from '../../lib/enrichmentApi';
+import { useToast } from '../../context/ToastContext';
+
 
 interface ListFieldProps {
   label: string;
@@ -66,7 +69,9 @@ function ListField({
 
 export default function ResultsScreen() {
   const router = useRouter();
+  const { pollEnrichmentStatus } = useToast();
   const { selectedImages, clearSelectedImages } = useImageContext();
+
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -250,6 +255,7 @@ export default function ResultsScreen() {
         phones: filteredPhones,
         websites: filteredWebsites,
         image_url: selectedImages.map(img => img.uri).join(','),
+        raw_extraction: data?.raw_extraction || null,
       };
 
       const hadEdits = (
@@ -262,12 +268,21 @@ export default function ResultsScreen() {
         JSON.stringify(filteredWebsites) !== JSON.stringify(data?.websites || [])
       );
 
-      await createCard(cardPayload);
+      const savedCard = await createCard(cardPayload);
       mutationState.hasMutated = true;
       trackEvent('card_saved', { had_edits: hadEdits });
       
+      // Trigger background enrichment and start status polling
+      try {
+        await enrichCard(savedCard.id);
+        pollEnrichmentStatus(savedCard.id);
+      } catch (enrichErr) {
+        console.error('Failed to trigger company enrichment:', enrichErr);
+      }
+      
       clearSelectedImages();
       router.replace('/(app)/dashboard');
+
     } catch (err: any) {
       Alert.alert("Save Failed", err.message || "An error occurred while saving the card.");
     } finally {
