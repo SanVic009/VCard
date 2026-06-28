@@ -29,20 +29,23 @@ async def authorization_error_handler(request: Request, exc: AuthorizationError)
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     errors = exc.errors()
-    if errors:
-        first = errors[0]
-        field = ".".join(str(x) for x in first.get("loc", []))
-        msg = f"Validation failed: {first.get('msg')} on field '{field}'"
-    else:
-        msg = "Validation failed"
-    logger.warning(f"RequestValidationError: {msg}")
+    logger.warning(f"RequestValidationError: Invalid request details: {errors}")
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"error": {"code": "validation_error", "message": msg}},
+        content={
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Invalid request.",
+                "details": errors
+            }
+        },
     )
 
 async def http_exception_handler(request: Request, exc: HTTPException):
-    logger.warning(f"HTTPException {exc.status_code}: {exc.detail}")
+    if exc.status_code >= 500:
+        logger.error(f"HTTPException {exc.status_code}: {exc.detail}")
+    else:
+        logger.warning(f"HTTPException {exc.status_code}: {exc.detail}")
     return JSONResponse(
         status_code=exc.status_code,
         content={"error": {"code": f"http_{exc.status_code}", "message": exc.detail}},
@@ -52,5 +55,11 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled server error: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"error": {"code": "internal_error", "message": "An internal server error occurred."}},
+        content={
+            "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "An unexpected error occurred."
+            }
+        },
     )
+

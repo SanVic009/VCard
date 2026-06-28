@@ -109,10 +109,14 @@ def parse_and_validate_gemma_json(raw_text: str) -> dict:
         "raw_extraction": raw_text
     }
 
+def log_retry_attempt(retry_state: RetryCallState):
+    logger.debug(f"Tenacity retry attempt {retry_state.attempt_number} for call_huggingface_api after error: {retry_state.outcome.exception()}")
+
 @retry(
     stop=stop_after_attempt(MAX_RETRIES),
     wait=wait_exponential(multiplier=2, min=2, max=10),
     retry=should_retry,
+    before_sleep=log_retry_attempt,
     reraise=True
 )
 async def call_huggingface_api(images: list) -> str:

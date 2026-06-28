@@ -1,17 +1,19 @@
 import logging
-import secure
 import time
+import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, status
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from auth.router import router as auth_router, limiter
 from cards.router import router as cards_router
 from extraction.router import router as extraction_router
 from enrichment.router import router as enrichment_router
 from database import engine, Base, USE_LOCAL_AUTH
+from core.config import settings
 
 from auth.dependencies import get_supabase
 from core.exceptions import (
@@ -24,14 +26,13 @@ from core.exceptions import (
     http_exception_handler,
 )
 
-# Configure logging at startup to follow format: timestamp | level | module | message
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
-)
+from core.logging_config import setup_logging, request_id_ctx_var
+import uuid
+
+# Configure logging at startup
+setup_logging(settings.environment, settings.log_level)
 logger = logging.getLogger(__name__)
 
-secure_headers = secure.Secure()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -57,7 +58,21 @@ app = FastAPI(title="Business Card Scanner API", version="1.0.0", lifespan=lifes
 
 # Rate Limiter
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+
+@app.exception_handler(RateLimitExceeded)
+def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    logger.warning(f"Rate limit exceeded: {request.method} {request.url.path}")
+    return JSONResponse(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        content={
+            "error": {
+                "code": "RATE_LIMITED",
+                "message": "Too many requests."
+            }
+        }
+    )
 
 # Custom Exception Handlers
 app.add_exception_handler(AuthenticationError, authentication_error_handler)
@@ -67,29 +82,55 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(Exception, global_exception_handler)
 
 # CORS Middleware
+origins = [o.strip() for o in settings.allowed_origins.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Secure Headers Middleware
+# Security Response Headers Middleware
 @app.middleware("http")
-async def set_secure_headers(request: Request, call_next):
+async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
-    secure_headers.framework.fastapi(response)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    if settings.environment == "production":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
 
 # Logging Middleware for all requests
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    duration = time.time() - start_time
-    logger.info(f"{request.method} {request.url.path} | Status: {response.status_code} | Duration: {duration:.4f}s")
-    return response
+    # Extract request ID from headers (X-Request-ID) if present, otherwise generate UUID
+    request_id = request.headers.get("x-request-id") or request.headers.get("X-Request-ID")
+    if not request_id:
+        request_id = str(uuid.uuid4())
+        
+    token = request_id_ctx_var.set(request_id)
+    try:
+        logger.info(f"Request started: {request.method} {request.url.path}")
+        start_time = time.time()
+        
+        response = await call_next(request)
+        
+        duration_ms = int((time.time() - start_time) * 1000)
+        logger.info(f"Request completed: {request.method} {request.url.path} - Status: {response.status_code} - Duration: {duration_ms}ms")
+        
+        if 400 <= response.status_code < 500:
+            logger.warning(f"4xx response returned: {response.status_code} for {request.method} {request.url.path}")
+        elif response.status_code >= 500:
+            logger.error(f"5xx response returned: {response.status_code} for {request.method} {request.url.path}")
+            
+        response.headers["X-Request-ID"] = request_id
+        return response
+    finally:
+        request_id_ctx_var.reset(token)
 
 app.include_router(auth_router)
 app.include_router(cards_router)
@@ -100,3 +141,36 @@ app.include_router(enrichment_router)
 def read_root():
 
     return {"status": "ok", "auth_mode": "local" if USE_LOCAL_AUTH else "supabase"}
+
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "ok",
+        "version": settings.app_version,
+        "environment": settings.environment
+    }
+
+
+@app.get("/ready")
+def readiness_check():
+    try:
+        if USE_LOCAL_AUTH:
+            from database import SessionLocal
+            from sqlalchemy import text
+            if not SessionLocal:
+                raise Exception("Local database session is not configured")
+            with SessionLocal() as db:
+                db.execute(text("SELECT 1"))
+        else:
+            supabase = get_supabase()
+            if not supabase:
+                raise Exception("Supabase connection not configured")
+            supabase.table("business_cards").select("id").limit(1).execute()
+        return {"status": "ready"}
+    except Exception as e:
+        logger.error(f"Readiness check failed: {e}")
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"status": "unavailable", "reason": str(e)}
+        )

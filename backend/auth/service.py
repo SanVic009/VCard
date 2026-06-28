@@ -29,7 +29,7 @@ class AuthService:
             
             existing_user = db.query(User).filter(User.email == email).first()
             if existing_user:
-                logger.warning(f"Signup failed: Email {email} already registered")
+                logger.warning("Signup failed: Email already registered")
                 raise AuthenticationError("Email already registered")
                 
             new_user = User(
@@ -69,7 +69,7 @@ class AuthService:
                     user=UserInfo(id=auth_response.user.id, email=auth_response.user.email)
                 )
             except Exception as e:
-                logger.error(f"Supabase signup failed for {email}: {str(e)}")
+                logger.error(f"Supabase signup failed: {str(e)}")
                 raise AuthenticationError(str(e))
 
     @staticmethod
@@ -83,7 +83,7 @@ class AuthService:
                 
             user = db.query(User).filter(User.email == email).first()
             if not user or not verify_password(password, user.hashed_password):
-                logger.warning(f"Login failed: Invalid credentials for {email}")
+                logger.warning("Login failed: Invalid credentials")
                 raise AuthenticationError("Invalid email or password")
                 
             access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
@@ -107,7 +107,7 @@ class AuthService:
                     user=UserInfo(id=response.user.id, email=response.user.email)
                 )
             except Exception as e:
-                logger.warning(f"Login failed (Supabase) for {email}: {str(e)}")
+                logger.warning(f"Login failed (Supabase): {str(e)}")
                 raise AuthenticationError("Invalid email or password")
 
     @staticmethod

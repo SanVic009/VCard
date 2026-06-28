@@ -124,9 +124,13 @@ class EnrichmentService:
         client = genai.Client(api_key=self.api_key)
 
         last_error = None
-        for model in MODELS:
+        for idx, model in enumerate(MODELS):
             try:
-                logger.info(f"Enriching company info using model: {model}...")
+                if idx > 0:
+                    logger.debug(f"Retrying Gemini enrichment with model: {model} (attempt {idx + 1})")
+                else:
+                    logger.info(f"Enriching company info using model: {model}...")
+                
                 response = client.models.generate_content(
                     model=model,
                     contents=prompt,
@@ -138,6 +142,9 @@ class EnrichmentService:
                 raw_text = response.text
                 if not raw_text:
                     raise ValueError("Model returned empty response text")
+
+                # Log Gemini raw response (truncated)
+                logger.debug(f"Gemini raw response (truncated): {raw_text[:500]}...")
 
                 clean_text = clean_json_response(raw_text)
                 result = json.loads(clean_text)
@@ -162,5 +169,7 @@ class EnrichmentService:
                 last_error = e
 
         if last_error:
+            logger.error(f"Gemini enrichment failed after trying all models: {last_error}")
             raise last_error
+        logger.error("Gemini enrichment failed: All Gemini models failed to generate response.")
         raise RuntimeError("All Gemini models failed to generate response.")
