@@ -2,7 +2,7 @@ import axios from 'axios';
 import { router } from 'expo-router';
 import { getAccessToken, getRefreshToken, saveTokens, clearTokens } from './storage';
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+export const API_URL = 'https://app-ogvm.onrender.com';
 
 const api = axios.create({
   baseURL: API_URL,
