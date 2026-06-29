@@ -4,7 +4,8 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
 import { useCard } from '../../../hooks/useCard';
 import { deleteCard } from '../../../lib/cardsApi';
-import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { CardDetailSkeleton } from '../../../components/Skeleton';
 import { trackEvent } from '../../../lib/analytics';
 import { mutationState } from '../../../lib/mutationState';
@@ -269,7 +270,7 @@ export default function CardDetailScreen() {
                 onPress={() => card.address && handleAddress(card.address)}
                 accessibilityLabel="Open in Maps"
               >
-                <FontAwesome name="map-marker" size={18} color="#dc3545" style={styles.actionIcon} />
+                <FontAwesome name="map-marker" size={18} color="#dc3545" />
               </TouchableOpacity>
             </View>
           ) : (
@@ -288,7 +289,7 @@ export default function CardDetailScreen() {
                   onPress={() => handleEmail(email)}
                   accessibilityLabel="Send email"
                 >
-                  <FontAwesome name="envelope" size={16} color="#e0a800" style={styles.actionIcon} />
+                  <FontAwesome name="envelope" size={16} color="#e0a800" />
                 </TouchableOpacity>
               </View>
             ))
@@ -309,21 +310,21 @@ export default function CardDetailScreen() {
                     onPress={() => handleCall(phone)}
                     accessibilityLabel="Call phone number"
                   >
-                    <FontAwesome name="phone" size={18} color="#007bff" style={styles.actionIcon} />
+                    <FontAwesome name="phone" size={18} color="#007bff" />
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={styles.actionButton} 
                     onPress={() => handleSMS(phone)}
                     accessibilityLabel="Send SMS"
                   >
-                    <FontAwesome name="comment" size={18} color="#28a745" style={styles.actionIcon} />
+                    <FontAwesome name="comment" size={18} color="#28a745" />
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={styles.actionButton} 
                     onPress={() => handleWhatsApp(phone)}
                     accessibilityLabel="Chat on WhatsApp"
                   >
-                    <FontAwesome name="whatsapp" size={20} color="#25D366" style={styles.actionIcon} />
+                    <FontAwesome name="whatsapp" size={20} color="#25D366" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -344,7 +345,7 @@ export default function CardDetailScreen() {
                   onPress={() => handleWebsite(web)}
                   accessibilityLabel="Open website"
                 >
-                  <FontAwesome name="globe" size={18} color="#17a2b8" style={styles.actionIcon} />
+                  <FontAwesome name="globe" size={18} color="#17a2b8" />
                 </TouchableOpacity>
               </View>
             ))
