@@ -105,7 +105,7 @@ class EnrichmentService:
         if not api_key or api_key == "your_gemini_api_key_here":
             logger.warning("Gemini API key is not configured. Enrichment will fail.")
 
-    def enrich_company(self, website: Optional[str], name: Optional[str]) -> Dict[str, Any]:
+    def enrich_company(self, website: Optional[str], name: Optional[str], on_attempt=None) -> Dict[str, Any]:
         if not self.api_key or self.api_key == "your_gemini_api_key_here":
             raise ValueError("GEMINI_API_KEY is not configured in the environment.")
 
@@ -125,6 +125,8 @@ class EnrichmentService:
 
         last_error = None
         for idx, model in enumerate(MODELS):
+            if on_attempt:
+                on_attempt()
             try:
                 if idx > 0:
                     logger.debug(f"Retrying Gemini enrichment with model: {model} (attempt {idx + 1})")

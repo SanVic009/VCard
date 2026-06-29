@@ -40,6 +40,56 @@ async def lifespan(app: FastAPI):
         logger.info("Initializing app with LOCAL Auth Mode.")
         try:
             Base.metadata.create_all(bind=engine)
+            from sqlalchemy import text
+            with engine.connect() as conn:
+                conn.execute(text("""
+                CREATE OR REPLACE FUNCTION handle_update_timestamp()
+                RETURNS TRIGGER AS $$
+                BEGIN
+                  NEW.updated_at = now();
+                  RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql;
+                """))
+                
+                conn.execute(text("""
+                DROP TRIGGER IF EXISTS update_extraction_jobs_updated_at ON extraction_jobs;
+                CREATE TRIGGER update_extraction_jobs_updated_at
+                BEFORE UPDATE ON extraction_jobs
+                FOR EACH ROW
+                EXECUTE FUNCTION handle_update_timestamp();
+                """))
+                
+                conn.execute(text("""
+                DROP TRIGGER IF EXISTS update_enrichment_jobs_updated_at ON enrichment_jobs;
+                CREATE TRIGGER update_enrichment_jobs_updated_at
+                BEFORE UPDATE ON enrichment_jobs
+                FOR EACH ROW
+                EXECUTE FUNCTION handle_update_timestamp();
+                """))
+                
+                conn.execute(text("""
+                CREATE OR REPLACE FUNCTION increment_extraction_attempts(job_id uuid)
+                RETURNS void AS $$
+                BEGIN
+                  UPDATE extraction_jobs
+                  SET attempts = attempts + 1
+                  WHERE id = job_id;
+                END;
+                $$ LANGUAGE plpgsql;
+                """))
+                
+                conn.execute(text("""
+                CREATE OR REPLACE FUNCTION increment_enrichment_attempts(job_id uuid)
+                RETURNS void AS $$
+                BEGIN
+                  UPDATE enrichment_jobs
+                  SET attempts = attempts + 1
+                  WHERE id = job_id;
+                END;
+                $$ LANGUAGE plpgsql;
+                """))
+                conn.commit()
             logger.info("Local database tables verified/created successfully.")
         except Exception as e:
             logger.error(f"Failed to create local database tables: {e}", exc_info=True)

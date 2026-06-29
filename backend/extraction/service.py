@@ -119,7 +119,9 @@ def log_retry_attempt(retry_state: RetryCallState):
     before_sleep=log_retry_attempt,
     reraise=True
 )
-async def call_huggingface_api(images: list) -> str:
+async def call_huggingface_api(images: list, on_attempt=None) -> str:
+    if on_attempt:
+        on_attempt()
     if not HF_API_KEY:
         raise NonRetryableExtractionError("AI service authentication failed.")
 
@@ -182,8 +184,8 @@ async def call_huggingface_api(images: list) -> str:
         logger.warning(f"Hugging Face request error: {e}")
         raise ExtractionError("AI service network error.")
 
-async def process_business_card(images: list) -> dict:
+async def process_business_card(images: list, on_attempt=None) -> dict:
     for img in images:
         validate_image(img["image_base64"])
-    raw_text = await call_huggingface_api(images)
+    raw_text = await call_huggingface_api(images, on_attempt=on_attempt)
     return parse_and_validate_gemma_json(raw_text)
