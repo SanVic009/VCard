@@ -197,39 +197,17 @@ app.include_router(extraction_router, prefix="/extraction", tags=["Extraction"])
 app.include_router(enrichment_router)
 
 @app.get("/")
+@app.head("/")
 def read_root():
 
     return {"status": "ok", "auth_mode": "local" if USE_LOCAL_AUTH else "supabase"}
 
 
 @app.get("/health")
+@app.head("/health")
 def health_check():
     return {
         "status": "ok",
         "version": settings.app_version,
         "environment": settings.environment
     }
-
-
-@app.get("/ready")
-def readiness_check():
-    try:
-        if USE_LOCAL_AUTH:
-            from database import SessionLocal
-            from sqlalchemy import text
-            if not SessionLocal:
-                raise Exception("Local database session is not configured")
-            with SessionLocal() as db:
-                db.execute(text("SELECT 1"))
-        else:
-            supabase = get_supabase()
-            if not supabase:
-                raise Exception("Supabase connection not configured")
-            supabase.table("business_cards").select("id").limit(1).execute()
-        return {"status": "ready"}
-    except Exception as e:
-        logger.error(f"Readiness check failed: {e}")
-        return JSONResponse(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content={"status": "unavailable", "reason": str(e)}
-        )
