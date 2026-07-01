@@ -1,34 +1,12 @@
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { getAccessToken, getRefreshToken, saveTokens, clearTokens } from './storage';
+import { API_URL } from './config';
 
 let onUnauthorizedCallback: (() => void) | null = null;
 
 export const registerUnauthorizedHandler = (callback: () => void) => {
   onUnauthorizedCallback = callback;
 };
-
-const getBaseUrl = () => {
-  const envUrl = process.env.EXPO_PUBLIC_API_URL;
-  if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
-    return envUrl;
-  }
-  
-  if (__DEV__) {
-    const hostUri = Constants.expoConfig?.hostUri;
-    if (hostUri) {
-      const host = hostUri.split(':')[0];
-      return `http://${host}:8000`;
-    }
-  }
-  
-  return envUrl || 'http://localhost:8000';
-};
-
-// Resolve the API URL from environment variable, falling back to dynamic config in dev
-export const API_URL = __DEV__
-  ? getBaseUrl()
-  : (process.env.EXPO_PUBLIC_API_URL || '');
 
 const api = axios.create({
   baseURL: API_URL,

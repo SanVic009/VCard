@@ -7,7 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, LogBox } from 'react-native';
 import OfflineBanner from '../components/OfflineBanner';
 import axios from 'axios';
-import { API_URL } from '../lib/api';
+import { API_URL } from '../lib/config';
 import { useFonts } from 'expo-font';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import * as SplashScreen from 'expo-splash-screen';
