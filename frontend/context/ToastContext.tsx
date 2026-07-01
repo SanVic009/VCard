@@ -6,6 +6,7 @@ import { getEnrichmentStatus } from '../lib/enrichmentApi';
 
 interface ToastOptions {
   message: string;
+  type?: 'success' | 'error' | 'info';
   onPress?: () => void;
   duration?: number;
 }
@@ -22,6 +23,7 @@ const { width } = Dimensions.get('window');
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState('');
+  const [type, setType] = useState<'success' | 'error' | 'info'>('info');
   const [onPressAction, setOnPressAction] = useState<(() => void) | undefined>(undefined);
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -30,12 +32,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const activePollsRef = useRef<{ [cardId: string]: any }>({});
 
 
-  const showToast = ({ message, onPress, duration = 2500 }: ToastOptions) => {
+  const showToast = ({ message, type = 'info', onPress, duration = 2500 }: ToastOptions) => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
     setMessage(message);
+    setType(type);
     setOnPressAction(() => onPress);
     setVisible(true);
 
@@ -106,6 +109,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           const companyId = res.company_id;
           showToast({
             message: 'Company info available.',
+            type: 'success',
             onPress: () => {
               router.push(`/(app)/company/${companyId}?cardId=${cardId}` as any);
             }
@@ -115,6 +119,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           const companyId = res.company_id;
           showToast({
             message: 'Company research failed.',
+            type: 'error',
             onPress: companyId ? () => {
               router.push(`/(app)/company/${companyId}?cardId=${cardId}` as any);
             } : undefined
@@ -126,6 +131,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             const companyId = res.company_id;
             showToast({
               message: 'Company research timed out.',
+              type: 'error',
               onPress: companyId ? () => {
                 router.push(`/(app)/company/${companyId}?cardId=${cardId}` as any);
               } : undefined
@@ -142,13 +148,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         const status = err.response?.status;
         if (status === 401 || status === 403) {
           stopPolling(cardId);
-          showToast({ message: 'Session expired. Please log in again.' });
+          showToast({ message: 'Session expired. Please log in again.', type: 'error' });
           return;
         }
         elapsed += currentDelay;
         if (elapsed >= maxDuration) {
           stopPolling(cardId);
-          showToast({ message: 'Company research failed to poll.' });
+          showToast({ message: 'Company research failed to poll.', type: 'error' });
         } else {
           const nextDelay = currentDelay;
           currentDelay = Math.min(currentDelay * 2, maxDelay);
@@ -188,18 +194,37 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           pointerEvents="box-none"
         >
           <TouchableOpacity 
-            style={styles.toastContent} 
+            style={[
+              styles.toastContent,
+              type === 'success' ? styles.toastSuccess : null
+            ]} 
             onPress={handlePress} 
             activeOpacity={0.85}
           >
             <View style={styles.toastLeft}>
-              <FontAwesome name="info-circle" size={18} color="#00E676" style={styles.toastIcon} />
+              <FontAwesome 
+                name={type === 'success' ? 'check-circle' : 'info-circle'} 
+                size={18} 
+                color={type === 'success' ? '#FFFFFF' : '#0868D6'} 
+                style={styles.toastIcon} 
+              />
               <Text style={styles.toastText} numberOfLines={2}>{message}</Text>
             </View>
             {onPressAction && (
-              <View style={styles.actionBtn}>
-                <Text style={styles.toastActionText}>VIEW</Text>
-                <FontAwesome name="chevron-right" size={10} color="#00E676" style={styles.arrowIcon} />
+              <View style={[
+                styles.actionBtn,
+                type === 'success' ? styles.actionBtnSuccess : null
+              ]}>
+                <Text style={[
+                  styles.toastActionText,
+                  type === 'success' ? styles.toastActionTextSuccess : null
+                ]}>VIEW</Text>
+                <FontAwesome 
+                  name="chevron-right" 
+                  size={10} 
+                  color={type === 'success' ? '#FFFFFF' : '#0868D6'} 
+                  style={styles.arrowIcon} 
+                />
               </View>
             )}
           </TouchableOpacity>
@@ -245,6 +270,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
+  toastSuccess: {
+    backgroundColor: '#6FAC39',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
   toastLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -262,16 +291,22 @@ const styles = StyleSheet.create({
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 230, 118, 0.1)',
+    backgroundColor: 'rgba(8, 104, 214, 0.15)',
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 6,
   },
+  actionBtnSuccess: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
   toastActionText: {
-    color: '#00E676',
+    color: '#0868D6',
     fontSize: 11,
     fontWeight: '700',
     marginRight: 4,
+  },
+  toastActionTextSuccess: {
+    color: '#FFFFFF',
   },
   arrowIcon: {
     marginTop: 1,

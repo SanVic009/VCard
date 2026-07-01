@@ -1,8 +1,31 @@
 import axios from 'axios';
-import { router } from 'expo-router';
+import Constants from 'expo-constants';
 import { getAccessToken, getRefreshToken, saveTokens, clearTokens } from './storage';
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+let onUnauthorizedCallback: (() => void) | null = null;
+
+export const registerUnauthorizedHandler = (callback: () => void) => {
+  onUnauthorizedCallback = callback;
+};
+
+const getBaseUrl = () => {
+  const envUrl = process.env.EXPO_PUBLIC_API_URL;
+  if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+    return envUrl;
+  }
+  
+  if (__DEV__) {
+    const hostUri = Constants.expoConfig?.hostUri;
+    if (hostUri) {
+      const host = hostUri.split(':')[0];
+      return `http://${host}:8000`;
+    }
+  }
+  
+  return envUrl || 'http://localhost:8000';
+};
+
+export const API_URL = getBaseUrl();
 
 const api = axios.create({
   baseURL: API_URL,
@@ -56,33 +79,49 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Silent refresh on 401
-    if (error.response.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+    // Silent refresh on 401 (skip for auth endpoints to prevent overriding credentials errors)
+    const isAuthEndpoint = originalRequest.url && (
+      originalRequest.url.includes('/auth/login') || 
+      originalRequest.url.includes('/auth/signup') ||
+      originalRequest.url.includes('/auth/refresh')
+    );
 
-      try {
-        const refreshToken = await getRefreshToken();
-        if (!refreshToken) {
-          throw new Error('No refresh token available');
+    if (error.response.status === 401 && !isAuthEndpoint) {
+      if (!originalRequest._retry) {
+        originalRequest._retry = true;
+
+        try {
+          const refreshToken = await getRefreshToken();
+          if (!refreshToken) {
+            throw new Error('No refresh token available');
+          }
+
+          // Make a direct axios call to avoid the interceptor loop
+          const refreshResponse = await axios.post<AuthResponse>(`${API_URL}/auth/refresh`, {
+            refresh_token: refreshToken
+          });
+
+          const newAuth = refreshResponse.data;
+          await saveTokens(newAuth.access_token, newAuth.refresh_token);
+
+          // Retry original request with new token
+          originalRequest.headers.Authorization = `Bearer ${newAuth.access_token}`;
+          return api(originalRequest);
+          
+        } catch (refreshError) {
+          // Silent refresh failed
+          await clearTokens();
+          if (onUnauthorizedCallback) {
+            onUnauthorizedCallback();
+          }
+          return Promise.reject(refreshError);
         }
-
-        // Make a direct axios call to avoid the interceptor loop
-        const refreshResponse = await axios.post<AuthResponse>(`${API_URL}/auth/refresh`, {
-          refresh_token: refreshToken
-        });
-
-        const newAuth = refreshResponse.data;
-        await saveTokens(newAuth.access_token, newAuth.refresh_token);
-
-        // Retry original request with new token
-        originalRequest.headers.Authorization = `Bearer ${newAuth.access_token}`;
-        return api(originalRequest);
-        
-      } catch (refreshError) {
-        // Silent refresh failed
+      } else {
+        // Already retried once but failed again with 401
         await clearTokens();
-        router.replace('/auth/login');
-        return Promise.reject(refreshError);
+        if (onUnauthorizedCallback) {
+          onUnauthorizedCallback();
+        }
       }
     }
 

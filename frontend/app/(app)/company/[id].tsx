@@ -156,7 +156,7 @@ export default function CompanyDetailScreen() {
       <View style={styles.container}>
         <Drawer.Screen options={{ title: 'Enriching...' }} />
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#00E676" />
+          <ActivityIndicator size="large" color="#2E1028" />
           <Text style={styles.loadingText}>Gathering company info...</Text>
         </View>
       </View>
@@ -170,7 +170,7 @@ export default function CompanyDetailScreen() {
       <View style={styles.container}>
         <Drawer.Screen options={{ title: 'No Information' }} />
         <View style={styles.center}>
-          <MaterialIcons name="error-outline" size={54} color="#CF6679" style={{ marginBottom: 16 }} />
+          <MaterialIcons name="error-outline" size={54} color="#DC2626" style={{ marginBottom: 16 }} />
           <Text style={styles.errorText}>No company information found.</Text>
           {company?.enrichment_error ? (
             <Text style={styles.errorDetailsText}>{company.enrichment_error}</Text>
@@ -209,7 +209,7 @@ export default function CompanyDetailScreen() {
       <View style={styles.container}>
         <Drawer.Screen options={{ title: 'Enriching...' }} />
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#00E676" />
+          <ActivityIndicator size="large" color="#2E1028" />
           <Text style={styles.loadingText}>Gathering company info...</Text>
           <Text style={styles.subLoadingText}>Gemini is researching the web in real-time.</Text>
         </View>
@@ -225,7 +225,7 @@ export default function CompanyDetailScreen() {
       {/* Header Profile Section */}
       <View style={styles.headerCard}>
         <View style={styles.logoPlaceholder}>
-          <FontAwesome name="building" size={32} color="#00E676" />
+          <FontAwesome name="building" size={32} color="#2E1028" />
         </View>
         <Text style={styles.companyName}>{company.name || '—'}</Text>
 
@@ -234,7 +234,7 @@ export default function CompanyDetailScreen() {
             style={styles.websiteBtn}
             onPress={() => company.website && handleOpenWebsite(company.website)}
           >
-            <FontAwesome name="globe" size={14} color="#00E676" style={{ marginRight: 6 }} />
+            <FontAwesome name="globe" size={14} color="#2E1028" style={{ marginRight: 6 }} />
             <Text style={styles.websiteText}>{company.website}</Text>
           </TouchableOpacity>
         ) : (
@@ -246,7 +246,7 @@ export default function CompanyDetailScreen() {
       <View style={styles.sectionCard}>
         <Text style={styles.sectionTitle}>Location</Text>
         <View style={styles.locationContainer}>
-          <FontAwesome name="map-marker" size={16} color="#B3B3B3" style={{ marginRight: 8 }} />
+          <FontAwesome name="map-marker" size={16} color="#DC2626" style={{ marginRight: 8 }} />
           <Text style={styles.locationText}>{company.location || '—'}</Text>
         </View>
       </View>
@@ -322,10 +322,11 @@ export default function CompanyDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121214', // Premium dark theme
+    backgroundColor: '#E3E4DD',
   },
   content: {
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingTop: 20,
     paddingBottom: 40,
   },
   center: {
@@ -333,21 +334,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 30,
+    backgroundColor: '#E3E4DD',
   },
   loadingText: {
-    color: '#FFFFFF',
+    color: '#6B6B6B',
     fontSize: 16,
     fontWeight: '600',
     marginTop: 20,
   },
   subLoadingText: {
-    color: '#8E8E93',
+    color: '#6B6B6B',
     fontSize: 13,
     marginTop: 6,
     textAlign: 'center',
   },
   errorText: {
-    color: '#CF6679',
+    color: '#DC2626',
     fontSize: 15,
     fontWeight: '500',
     textAlign: 'center',
@@ -355,40 +357,43 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   btnBack: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1.5,
+    borderColor: '#2E1028',
   },
   btnBackText: {
-    color: '#FFFFFF',
+    color: '#2E1028',
     fontWeight: '600',
     fontSize: 14,
   },
   headerCard: {
-    backgroundColor: '#1C1C1E',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     marginBottom: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
   },
   logoPlaceholder: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(0, 230, 118, 0.1)',
+    backgroundColor: '#F5F5F0',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(0, 230, 118, 0.2)',
+    borderColor: '#D1D5DB',
   },
   companyName: {
-    color: '#FFFFFF',
+    color: '#1A1A1A',
     fontSize: 22,
     fontWeight: '700',
     textAlign: 'center',
@@ -397,37 +402,40 @@ const styles = StyleSheet.create({
   websiteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 230, 118, 0.08)',
+    backgroundColor: '#F5F5F0',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(0, 230, 118, 0.2)',
+    borderColor: '#D1D5DB',
   },
   websiteText: {
-    color: '#00E676',
+    color: '#2E1028',
     fontSize: 13,
     fontWeight: '600',
   },
   disabledWebsiteText: {
-    color: '#8E8E93',
+    color: '#6B6B6B',
     fontSize: 13,
     fontWeight: '500',
   },
   sectionCard: {
-    backgroundColor: '#1C1C1E',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 20,
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
   },
   sectionTitle: {
-    color: '#B3B3B3',
+    color: '#2E1028',
     fontSize: 11,
     fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
     marginBottom: 12,
   },
   locationContainer: {
@@ -435,7 +443,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   locationText: {
-    color: '#E1E1E1',
+    color: '#1A1A1A',
     fontSize: 15,
     fontWeight: '500',
   },
@@ -451,25 +459,25 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#00E676',
+    backgroundColor: '#2E1028',
   },
   bulletBlue: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#00B0FF',
+    backgroundColor: '#2E1028',
   },
   itemDetails: {
     flex: 1,
   },
   itemName: {
-    color: '#E1E1E1',
+    color: '#1A1A1A',
     fontSize: 15,
     fontWeight: '600',
     marginBottom: 3,
   },
   itemDesc: {
-    color: '#8E8E93',
+    color: '#6B6B6B',
     fontSize: 13,
     lineHeight: 18,
   },
@@ -479,20 +487,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   techTag: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#F5F5F0',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: '#D1D5DB',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 16,
   },
   techText: {
-    color: '#E1E1E1',
+    color: '#2E1028',
     fontSize: 13,
     fontWeight: '500',
   },
   emptyText: {
-    color: '#636366',
+    color: '#6B6B6B',
     fontSize: 15,
     fontWeight: '500',
   },
@@ -500,10 +508,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2C2C2E',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
+    backgroundColor: '#2E1028',
+    borderRadius: 8,
     paddingVertical: 14,
     marginTop: 10,
   },
@@ -523,12 +529,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#00E676',
+    backgroundColor: '#2E1028',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(0, 230, 118, 0.2)',
+    borderColor: 'rgba(46, 16, 40, 0.2)',
   },
   btnRetryText: {
     color: '#FFFFFF',
@@ -539,7 +545,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   errorDetailsText: {
-    color: '#8E8E93',
+    color: '#6B6B6B',
     fontSize: 13,
     textAlign: 'center',
     marginBottom: 20,
