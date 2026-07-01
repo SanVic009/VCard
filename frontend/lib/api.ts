@@ -25,8 +25,10 @@ const getBaseUrl = () => {
   return envUrl || 'http://localhost:8000';
 };
 
-// Use production render service on main branch, fallback to dynamic config in dev
-export const API_URL = __DEV__ ? getBaseUrl() : 'https://app-ogvm.onrender.com';
+// Resolve the API URL from environment variable, falling back to dynamic config in dev or default production Render URL in prod
+export const API_URL = __DEV__
+  ? getBaseUrl()
+  : (process.env.EXPO_PUBLIC_API_URL || 'https://app-ogvm.onrender.com');
 
 const api = axios.create({
   baseURL: API_URL,
