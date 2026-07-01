@@ -7,8 +7,6 @@ class Settings(BaseSettings):
     jwt_secret: str
     access_token_expire_minutes: int = 60
     environment: str = "development"
-    database_url: str
-    use_local_auth: bool = False
     gemini_api_key: str | None = None
     app_version: str = "0.0.1"
     allowed_origins: str = "*"

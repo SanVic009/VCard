@@ -12,7 +12,6 @@ from auth.router import router as auth_router, limiter
 from cards.router import router as cards_router
 from extraction.router import router as extraction_router
 from enrichment.router import router as enrichment_router
-from database import engine, Base, USE_LOCAL_AUTH
 from core.config import settings
 
 from auth.dependencies import get_supabase
@@ -36,72 +35,13 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if USE_LOCAL_AUTH:
-        logger.info("Initializing app with LOCAL Auth Mode.")
-        try:
-            Base.metadata.create_all(bind=engine)
-            from sqlalchemy import text
-            with engine.connect() as conn:
-                conn.execute(text("""
-                CREATE OR REPLACE FUNCTION handle_update_timestamp()
-                RETURNS TRIGGER AS $$
-                BEGIN
-                  NEW.updated_at = now();
-                  RETURN NEW;
-                END;
-                $$ LANGUAGE plpgsql;
-                """))
-                
-                conn.execute(text("""
-                DROP TRIGGER IF EXISTS update_extraction_jobs_updated_at ON extraction_jobs;
-                CREATE TRIGGER update_extraction_jobs_updated_at
-                BEFORE UPDATE ON extraction_jobs
-                FOR EACH ROW
-                EXECUTE FUNCTION handle_update_timestamp();
-                """))
-                
-                conn.execute(text("""
-                DROP TRIGGER IF EXISTS update_enrichment_jobs_updated_at ON enrichment_jobs;
-                CREATE TRIGGER update_enrichment_jobs_updated_at
-                BEFORE UPDATE ON enrichment_jobs
-                FOR EACH ROW
-                EXECUTE FUNCTION handle_update_timestamp();
-                """))
-                
-                conn.execute(text("""
-                CREATE OR REPLACE FUNCTION increment_extraction_attempts(job_id uuid)
-                RETURNS void AS $$
-                BEGIN
-                  UPDATE extraction_jobs
-                  SET attempts = attempts + 1
-                  WHERE id = job_id;
-                END;
-                $$ LANGUAGE plpgsql;
-                """))
-                
-                conn.execute(text("""
-                CREATE OR REPLACE FUNCTION increment_enrichment_attempts(job_id uuid)
-                RETURNS void AS $$
-                BEGIN
-                  UPDATE enrichment_jobs
-                  SET attempts = attempts + 1
-                  WHERE id = job_id;
-                END;
-                $$ LANGUAGE plpgsql;
-                """))
-                conn.commit()
-            logger.info("Local database tables verified/created successfully.")
-        except Exception as e:
-            logger.error(f"Failed to create local database tables: {e}", exc_info=True)
-            raise e
-    else:
-        logger.info("Initializing app with SUPABASE Auth Mode.")
-        try:
-            supabase = get_supabase()
-            if supabase:
-                logger.info("Supabase connection configured correctly.")
-        except Exception as e:
-            logger.warning(f"Supabase connection issue detected on startup: {e}")
+    logger.info("Initializing app with SUPABASE Auth Mode.")
+    try:
+        supabase = get_supabase()
+        if supabase:
+            logger.info("Supabase connection configured correctly.")
+    except Exception as e:
+        logger.warning(f"Supabase connection issue detected on startup: {e}")
     yield
 
 app = FastAPI(title="Business Card Scanner API", version="1.0.0", lifespan=lifespan)
@@ -200,7 +140,7 @@ app.include_router(enrichment_router)
 @app.head("/")
 def read_root():
 
-    return {"status": "ok", "auth_mode": "local" if USE_LOCAL_AUTH else "supabase"}
+    return {"status": "ok", "auth_mode": "supabase"}
 
 
 @app.get("/health")

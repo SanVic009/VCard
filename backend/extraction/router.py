@@ -4,9 +4,6 @@ from typing import Optional, List
 from core.config import settings
 from auth.dependencies import get_current_user, get_supabase
 from supabase import Client
-from database import USE_LOCAL_AUTH, get_db
-from sqlalchemy.orm import Session
-from models import ExtractionJob
 from extraction.service import process_business_card
 import logging
 
@@ -43,8 +40,7 @@ class ExtractionResponse(BaseModel):
 async def extract_card(
     request: ExtractionRequest,
     user: dict = Depends(get_current_user),
-    supabase: Client = Depends(get_supabase),
-    db: Session = Depends(get_db)
+    supabase: Client = Depends(get_supabase)
 ):
     user_id = user.get("id")
     job_id = None
@@ -60,76 +56,41 @@ async def extract_card(
             )
             
         # 1. Before calling HuggingFace: insert extraction_jobs row with status 'pending'
-        if USE_LOCAL_AUTH:
-            try:
-                job = ExtractionJob(
-                    card_id=request.card_id,
-                    user_id=user_id,
-                    status="pending",
-                    attempts=0
-                )
-                db.add(job)
-                db.commit()
-                db.refresh(job)
-                job_id = job.id
-            except Exception as e:
-                logger.error(f"Failed to insert extraction job locally: {e}")
-        else:
-            try:
-                job_data = {
-                    "card_id": request.card_id,
-                    "user_id": user_id,
-                    "status": "pending",
-                    "attempts": 0
-                }
-                job_res = supabase.table("extraction_jobs").insert(job_data).execute()
-                if job_res.data:
-                    job_id = job_res.data[0]["id"]
-            except Exception as e:
-                logger.error(f"Failed to insert extraction job in Supabase: {e}")
+        try:
+            job_data = {
+                "card_id": request.card_id,
+                "user_id": user_id,
+                "status": "pending",
+                "attempts": 0
+            }
+            job_res = supabase.table("extraction_jobs").insert(job_data).execute()
+            if job_res.data:
+                job_id = job_res.data[0]["id"]
+        except Exception as e:
+            logger.error(f"Failed to insert extraction job in Supabase: {e}")
 
         # Define attempt increment callback
         def on_attempt():
             if job_id:
-                if USE_LOCAL_AUTH:
-                    try:
-                        db.query(ExtractionJob).filter(ExtractionJob.id == job_id).update({
-                            "attempts": ExtractionJob.attempts + 1
-                        })
-                        db.commit()
-                    except Exception as e:
-                        logger.error(f"Failed to increment attempts locally: {e}")
-                else:
-                    try:
-                        supabase.rpc("increment_extraction_attempts", {"job_id": job_id}).execute()
-                    except Exception as e:
-                        logger.error(f"Failed to increment attempts in Supabase: {e}")
+                try:
+                    supabase.rpc("increment_extraction_attempts", {"job_id": job_id}).execute()
+                except Exception as e:
+                    logger.error(f"Failed to increment attempts in Supabase: {e}")
 
         # Call extraction service
         data = await process_business_card(images_to_process, on_attempt=on_attempt)
         
         # 2. On success: update status 'completed', store result and raw_response
         if job_id:
-            if USE_LOCAL_AUTH:
-                try:
-                    db.query(ExtractionJob).filter(ExtractionJob.id == job_id).update({
-                        "status": "completed",
-                        "result": data,
-                        "raw_response": data.get("raw_extraction")
-                    })
-                    db.commit()
-                except Exception as e:
-                    logger.error(f"Failed to update extraction job success locally: {e}")
-            else:
-                try:
-                    supabase.table("extraction_jobs").update({
-                        "status": "completed",
-                        "result": data,
-                        "raw_response": data.get("raw_extraction")
-                    }).eq("id", job_id).execute()
-                except Exception as e:
-                    logger.error(f"Failed to update extraction job success in Supabase: {e}")
-                    
+            try:
+                supabase.table("extraction_jobs").update({
+                    "status": "completed",
+                    "result": data,
+                    "raw_response": data.get("raw_extraction")
+                }).eq("id", job_id).execute()
+            except Exception as e:
+                logger.error(f"Failed to update extraction job success in Supabase: {e}")
+                
         return ExtractionResponse(success=True, data=data)
         
     except Exception as e:
@@ -138,22 +99,12 @@ async def extract_card(
         
         # 3. On failure: update status 'failed', store last_error
         if job_id:
-            if USE_LOCAL_AUTH:
-                try:
-                    db.query(ExtractionJob).filter(ExtractionJob.id == job_id).update({
-                        "status": "failed",
-                        "last_error": error_msg
-                    })
-                    db.commit()
-                except Exception as update_err:
-                    logger.error(f"Failed to update extraction job failure locally: {update_err}")
-            else:
-                try:
-                    supabase.table("extraction_jobs").update({
-                        "status": "failed",
-                        "last_error": error_msg
-                    }).eq("id", job_id).execute()
-                except Exception as update_err:
-                    logger.error(f"Failed to update extraction job failure in Supabase: {update_err}")
-                    
+            try:
+                supabase.table("extraction_jobs").update({
+                    "status": "failed",
+                    "last_error": error_msg
+                }).eq("id", job_id).execute()
+            except Exception as update_err:
+                logger.error(f"Failed to update extraction job failure in Supabase: {update_err}")
+                
         return ExtractionResponse(success=False, error=error_msg)
