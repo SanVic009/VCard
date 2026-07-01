@@ -215,7 +215,7 @@ export default function CardDetailScreen() {
                 disabled={isDeleting}
                 accessibilityLabel="Edit card"
               >
-                <MaterialIcons name="edit" size={24} color="#007bff" />
+                <MaterialIcons name="edit" size={24} color="#FFFFFF" />
               </TouchableOpacity>
               <TouchableOpacity 
                 onPress={handleDelete} 
@@ -224,9 +224,9 @@ export default function CardDetailScreen() {
                 accessibilityLabel="Delete card"
               >
                 {isDeleting ? (
-                  <ActivityIndicator size="small" color="#dc3545" />
+                  <ActivityIndicator size="small" color="#DC2626" />
                 ) : (
-                  <MaterialIcons name="delete" size={24} color="#dc3545" />
+                  <MaterialIcons name="delete" size={24} color="#DC2626" />
                 )}
               </TouchableOpacity>
             </View>
@@ -234,130 +234,128 @@ export default function CardDetailScreen() {
         }} 
       />
       
-      <View style={styles.cardInfo}>
-        <View style={styles.infoGroup}>
-          <Text style={styles.label}>Name</Text>
-          <Text style={styles.value}>{card.name || '—'}</Text>
-        </View>
+      {/* Top Section Contact Card */}
+      <View style={styles.topCard}>
+        <Text style={styles.topName}>{card.name || '—'}</Text>
+        <Text style={styles.topTitle}>{card.title || '—'}</Text>
+        {card.company ? (
+          <TouchableOpacity 
+            onPress={() => card.company_id && router.push(`/(app)/company/${card.company_id}?cardId=${card.id}` as any)}
+            disabled={!card.company_id}
+            activeOpacity={card.company_id ? 0.7 : 1}
+          >
+            <Text style={[styles.topCompany, card.company_id ? styles.topCompanyLink : null]}>
+              {card.company}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={styles.topCompany}>—</Text>
+        )}
 
-        <View style={styles.infoGroup}>
-          <Text style={styles.label}>Title</Text>
-          <Text style={styles.value}>{card.title || '—'}</Text>
-        </View>
+        {card.company_id ? (
+          <TouchableOpacity 
+            style={styles.fullWidthCompanyBtn} 
+            onPress={() => router.push(`/(app)/company/${card.company_id}?cardId=${card.id}` as any)}
+          >
+            <FontAwesome name="building" size={16} color="#2E1028" style={{ marginRight: 8 }} />
+            <Text style={styles.fullWidthCompanyBtnText}>View Company Details</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
 
-        <View style={styles.infoGroup}>
-          <Text style={styles.label}>Company</Text>
-          <Text style={styles.value}>{card.company || '—'}</Text>
-          {card.company_id ? (
+      {/* Address Section */}
+      {card.address && card.address !== '—' ? (
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionHeader}>Address</Text>
+          <View style={styles.itemCard}>
+            <Text style={styles.itemValue}>{card.address}</Text>
             <TouchableOpacity 
-              style={styles.companyLinkBtn} 
-              onPress={() => router.push(`/(app)/company/${card.company_id}?cardId=${card.id}` as any)}
+              style={styles.circleActionButton} 
+              onPress={() => card.address && handleAddress(card.address)}
+              accessibilityLabel="Open in Maps"
             >
-              <FontAwesome name="building-o" size={14} color="#007bff" style={{ marginRight: 6 }} />
-              <Text style={styles.companyLinkText}>View Company Details</Text>
+              <FontAwesome name="map-marker" size={18} color="#DC2626" />
             </TouchableOpacity>
-          ) : null}
+          </View>
         </View>
+      ) : null}
 
-
-        <View style={styles.infoGroup}>
-          <Text style={styles.label}>Address</Text>
-          {card.address && card.address !== '—' ? (
-            <View style={styles.actionRowItem}>
-              <Text style={styles.itemValue}>{card.address}</Text>
+      {/* Emails Section */}
+      {card.emails && card.emails.length > 0 ? (
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionHeader}>Emails</Text>
+          {card.emails.map((email, idx) => (
+            <View key={idx} style={styles.itemCard}>
+              <Text style={styles.itemValue}>{email}</Text>
               <TouchableOpacity 
-                style={styles.actionButton} 
-                onPress={() => card.address && handleAddress(card.address)}
-                accessibilityLabel="Open in Maps"
+                style={styles.circleActionButton} 
+                onPress={() => handleEmail(email)}
+                accessibilityLabel="Send email"
               >
-                <FontAwesome name="map-marker" size={18} color="#dc3545" />
+                <FontAwesome name="envelope" size={16} color="#E0A800" />
               </TouchableOpacity>
             </View>
-          ) : (
-            <Text style={styles.value}>—</Text>
-          )}
+          ))}
         </View>
+      ) : null}
 
-        <View style={styles.infoGroup}>
-          <Text style={styles.label}>Emails</Text>
-          {card.emails && card.emails.length > 0 ? (
-            card.emails.map((email, idx) => (
-              <View key={idx} style={styles.actionRowItem}>
-                <Text style={styles.itemValue}>{email}</Text>
+      {/* Phones Section */}
+      {card.phones && card.phones.length > 0 ? (
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionHeader}>Phones</Text>
+          {card.phones.map((phone, idx) => (
+            <View key={idx} style={styles.itemCard}>
+              <Text style={styles.itemValue}>{phone}</Text>
+              <View style={styles.inlineActionButtons}>
                 <TouchableOpacity 
-                  style={styles.actionButton} 
-                  onPress={() => handleEmail(email)}
-                  accessibilityLabel="Send email"
+                  style={styles.circleActionButton} 
+                  onPress={() => handleCall(phone)}
+                  accessibilityLabel="Call phone number"
                 >
-                  <FontAwesome name="envelope" size={16} color="#e0a800" />
+                  <FontAwesome name="phone" size={18} color="#2E1028" />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.circleActionButton} 
+                  onPress={() => handleSMS(phone)}
+                  accessibilityLabel="Send SMS"
+                >
+                  <FontAwesome name="comment" size={18} color="#6FAC39" />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.circleActionButton} 
+                  onPress={() => handleWhatsApp(phone)}
+                  accessibilityLabel="Chat on WhatsApp"
+                >
+                  <FontAwesome name="whatsapp" size={20} color="#25D366" />
                 </TouchableOpacity>
               </View>
-            ))
-          ) : (
-            <Text style={styles.value}>None</Text>
-          )}
+            </View>
+          ))}
         </View>
+      ) : null}
 
-        <View style={styles.infoGroup}>
-          <Text style={styles.label}>Phones</Text>
-          {card.phones && card.phones.length > 0 ? (
-            card.phones.map((phone, idx) => (
-              <View key={idx} style={styles.actionRowItem}>
-                <Text style={styles.itemValue}>{phone}</Text>
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity 
-                    style={styles.actionButton} 
-                    onPress={() => handleCall(phone)}
-                    accessibilityLabel="Call phone number"
-                  >
-                    <FontAwesome name="phone" size={18} color="#007bff" />
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.actionButton} 
-                    onPress={() => handleSMS(phone)}
-                    accessibilityLabel="Send SMS"
-                  >
-                    <FontAwesome name="comment" size={18} color="#28a745" />
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.actionButton} 
-                    onPress={() => handleWhatsApp(phone)}
-                    accessibilityLabel="Chat on WhatsApp"
-                  >
-                    <FontAwesome name="whatsapp" size={20} color="#25D366" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.value}>None</Text>
-          )}
+      {/* Websites Section */}
+      {card.websites && card.websites.length > 0 ? (
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionHeader}>Websites</Text>
+          {card.websites.map((web, idx) => (
+            <View key={idx} style={styles.itemCard}>
+              <Text style={styles.itemValue}>{web}</Text>
+              <TouchableOpacity 
+                style={styles.circleActionButton} 
+                onPress={() => handleWebsite(web)}
+                accessibilityLabel="Open website"
+              >
+                <FontAwesome name="globe" size={18} color="#17a2b8" />
+              </TouchableOpacity>
+            </View>
+          ))}
         </View>
+      ) : null}
 
-        <View style={styles.infoGroup}>
-          <Text style={styles.label}>Websites</Text>
-          {card.websites && card.websites.length > 0 ? (
-            card.websites.map((web, idx) => (
-              <View key={idx} style={styles.actionRowItem}>
-                <Text style={styles.itemValue}>{web}</Text>
-                <TouchableOpacity 
-                  style={styles.actionButton} 
-                  onPress={() => handleWebsite(web)}
-                  accessibilityLabel="Open website"
-                >
-                  <FontAwesome name="globe" size={18} color="#17a2b8" />
-                </TouchableOpacity>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.value}>None</Text>
-          )}
-        </View>
-
-        <View style={styles.metaSection}>
-          <Text style={styles.metaText}>Created: {formatDate(card.created_at)}</Text>
-          <Text style={styles.metaText}>Updated: {formatDate(card.updated_at)}</Text>
-        </View>
+      <View style={styles.metaSection}>
+        <Text style={styles.metaText}>Created: {formatDate(card.created_at)}</Text>
+        <Text style={styles.metaText}>Updated: {formatDate(card.updated_at)}</Text>
       </View>
     </ScrollView>
   );
@@ -366,10 +364,11 @@ export default function CardDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#E3E4DD',
   },
   content: {
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
     paddingBottom: 40,
   },
   center: {
@@ -377,103 +376,119 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#E3E4DD',
   },
-  cardInfo: {
-    backgroundColor: '#fff',
+  topCard: {
+    backgroundColor: '#FFFFFF',
     padding: 20,
     borderRadius: 12,
-    marginBottom: 25,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOpacity: 0.04,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
     elevation: 1,
   },
-  infoGroup: {
-    marginBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f8f9fa',
-    paddingBottom: 10,
-  },
-  label: {
-    fontSize: 12,
+  topName: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#212529',
-    textTransform: 'uppercase',
-    marginBottom: 4,
+    color: '#1A1A1A',
+    marginBottom: 6,
   },
-  value: {
+  topTitle: {
+    fontSize: 15,
+    color: '#6B6B6B',
+    marginBottom: 6,
+  },
+  topCompany: {
     fontSize: 16,
-    color: '#868e96',
-    fontWeight: 'normal',
+    color: '#6B6B6B',
+    fontWeight: '600',
+    marginBottom: 12,
   },
-  companyLinkBtn: {
+  topCompanyLink: {
+    color: '#2E1028',
+  },
+  fullWidthCompanyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F0',
+    paddingVertical: 12,
+    borderRadius: 8,
+    width: '100%',
     marginTop: 8,
-    backgroundColor: 'rgba(0, 123, 255, 0.05)',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
   },
-  companyLinkText: {
-    color: '#007bff',
+  fullWidthCompanyBtnText: {
+    color: '#2E1028',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
-
-  actionRowItem: {
+  sectionContainer: {
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#2E1028',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  itemCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
   },
   itemValue: {
     fontSize: 16,
-    color: '#868e96',
+    color: '#1A1A1A',
     fontWeight: 'normal',
     flex: 1,
     marginRight: 10,
   },
-  actionButtons: {
+  inlineActionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  actionButton: {
+  circleActionButton: {
     width: 44,
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 22,
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-  },
-  actionIcon: {
-    textAlign: 'center',
+    backgroundColor: '#F5F5F0',
   },
   metaSection: {
     marginTop: 15,
     borderTopWidth: 1,
-    borderTopColor: '#f1f3f5',
+    borderTopColor: '#D1D5DB',
     paddingTop: 15,
   },
   metaText: {
     fontSize: 12,
-    color: '#adb5bd',
+    color: '#6B6B6B',
     marginBottom: 4,
   },
   errorText: {
     fontSize: 16,
-    color: '#dc3545',
+    color: '#DC2626',
     fontWeight: '500',
     marginBottom: 20,
   },
   btnBack: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#2E1028',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,

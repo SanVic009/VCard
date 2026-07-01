@@ -15,6 +15,12 @@ function CustomDrawerContent(props: any) {
   // Get current active route to highlight the correct DrawerItem
   const activeRouteName = props.state.routes[props.state.index]?.name;
 
+  const drawerItemProps = {
+    activeTintColor: '#2E1028',
+    activeBackgroundColor: '#F5F5F0',
+    inactiveTintColor: '#6B6B6B',
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <DrawerContentScrollView {...props}>
@@ -23,24 +29,28 @@ function CustomDrawerContent(props: any) {
           icon={({ color, size }) => <MaterialIcons name="dashboard" color={color} size={size} />}
           focused={activeRouteName === 'dashboard'}
           onPress={() => router.push('/(app)/dashboard')}
+          {...drawerItemProps}
         />
         <DrawerItem
           label="Settings"
           icon={({ color, size }) => <MaterialIcons name="settings" color={color} size={size} />}
           focused={activeRouteName === 'settings'}
           onPress={() => router.push('/(app)/settings')}
+          {...drawerItemProps}
         />
         <DrawerItem
           label="About"
           icon={({ color, size }) => <MaterialIcons name="info" color={color} size={size} />}
           focused={activeRouteName === 'about'}
           onPress={() => router.push('/(app)/about')}
+          {...drawerItemProps}
         />
       </DrawerContentScrollView>
       <View style={styles.logoutSection}>
         <DrawerItem
           label="Logout"
-          icon={({ color, size }) => <MaterialIcons name="logout" color={color} size={size} />}
+          icon={({ size }) => <MaterialIcons name="logout" color="#DC2626" size={size} />}
+          labelStyle={{ color: '#DC2626' }}
           onPress={() => {
             clearSelectedImages();
             logout();
@@ -63,7 +73,18 @@ export default function AppLayout() {
   }
 
   return (
-    <Drawer drawerContent={(props) => <CustomDrawerContent {...props} />}>
+    <Drawer
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#2E1028',
+        },
+        headerTintColor: '#FFFFFF',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
       <Drawer.Screen
         name="dashboard"
         options={{
@@ -93,7 +114,7 @@ export default function AppLayout() {
 const styles = StyleSheet.create({
   logoutSection: {
     marginBottom: 20,
-    borderTopColor: '#ccc',
+    borderTopColor: '#D1D5DB',
     borderTopWidth: 1,
   },
 });

@@ -29,12 +29,14 @@ function ListField({
   onUpdate,
   onRemove,
 }: ListFieldProps) {
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+
   return (
     <View style={styles.listFieldContainer}>
       <View style={styles.listHeaderRow}>
         <Text style={styles.label}>{label}</Text>
         <TouchableOpacity style={styles.btnAdd} onPress={onAdd}>
-          <MaterialIcons name="add" size={18} color="#007bff" />
+          <MaterialIcons name="add" size={18} color="#2E1028" />
           <Text style={styles.btnAddText}>Add</Text>
         </TouchableOpacity>
       </View>
@@ -43,15 +45,21 @@ function ListField({
         <View key={index} style={{ marginBottom: 10 }}>
           <View style={styles.listItemRow}>
             <TextInput
-              style={[styles.input, errors?.[index] ? styles.inputError : null]}
+              style={[
+                styles.input, 
+                errors?.[index] ? styles.inputError : null,
+                focusedIndex === index && styles.inputFocused
+              ]}
               value={item}
               onChangeText={(text) => onUpdate(index, text)}
               placeholder={placeholder}
               keyboardType={keyboardType}
               autoCapitalize="none"
+              onFocus={() => setFocusedIndex(index)}
+              onBlur={() => setFocusedIndex(null)}
             />
             <TouchableOpacity style={styles.btnRemove} onPress={() => onRemove(index)}>
-              <MaterialIcons name="delete-outline" size={24} color="#dc3545" />
+              <MaterialIcons name="delete-outline" size={24} color="#DC2626" />
             </TouchableOpacity>
           </View>
           {errors?.[index] ? (
@@ -78,6 +86,7 @@ export default function CardEditScreen() {
   
   const [saving, setSaving] = useState(false);
   const [emailErrors, setEmailErrors] = useState<string[]>([]);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   // Pre-populate fields
   useEffect(() => {
@@ -252,7 +261,7 @@ export default function CardEditScreen() {
     return (
       <View style={styles.center}>
         <Drawer.Screen options={{ title: 'Loading...' }} />
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size="large" color="#2E1028" />
       </View>
     );
   }
@@ -261,7 +270,7 @@ export default function CardEditScreen() {
     return (
       <View style={styles.center}>
         <Drawer.Screen options={{ title: 'Error' }} />
-        <MaterialIcons name="error-outline" size={48} color="#dc3545" style={{ marginBottom: 15 }} />
+        <MaterialIcons name="error-outline" size={48} color="#DC2626" style={{ marginBottom: 15 }} />
         <Text style={styles.errorText}>{error || 'Card not found.'}</Text>
         <TouchableOpacity onPress={() => router.back()} style={styles.btnBack}>
           <Text style={styles.btnBackText}>Go Back</Text>
@@ -277,27 +286,54 @@ export default function CardEditScreen() {
       <View style={styles.form}>
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Name</Text>
-          <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Name" />
+          <TextInput 
+            style={[styles.input, focusedField === 'name' && styles.inputFocused]} 
+            value={name} 
+            onChangeText={setName} 
+            placeholder="Name" 
+            onFocus={() => setFocusedField('name')}
+            onBlur={() => setFocusedField(null)}
+          />
         </View>
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Title</Text>
-          <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Title" />
+          <TextInput 
+            style={[styles.input, focusedField === 'title' && styles.inputFocused]} 
+            value={title} 
+            onChangeText={setTitle} 
+            placeholder="Title" 
+            onFocus={() => setFocusedField('title')}
+            onBlur={() => setFocusedField(null)}
+          />
         </View>
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Company</Text>
-          <TextInput style={styles.input} value={company} onChangeText={setCompany} placeholder="Company" />
+          <TextInput 
+            style={[styles.input, focusedField === 'company' && styles.inputFocused]} 
+            value={company} 
+            onChangeText={setCompany} 
+            placeholder="Company" 
+            onFocus={() => setFocusedField('company')}
+            onBlur={() => setFocusedField(null)}
+          />
         </View>
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Address</Text>
           <TextInput 
-            style={[styles.input, styles.multilineInput]} 
+            style={[
+              styles.input, 
+              styles.multilineInput,
+              focusedField === 'address' && styles.inputFocused
+            ]} 
             value={address} 
             onChangeText={setAddress} 
             placeholder="Address" 
             multiline 
+            onFocus={() => setFocusedField('address')}
+            onBlur={() => setFocusedField(null)}
           />
         </View>
 
@@ -333,24 +369,24 @@ export default function CardEditScreen() {
         />
       </View>
 
-      <View style={styles.actions}>
+      <View style={styles.actionsContainer}>
         <TouchableOpacity 
-          style={[styles.btn, styles.cancelBtn]} 
-          onPress={handleCancel}
-          disabled={saving}
-        >
-          <Text style={styles.btnText}>Cancel</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.btn, styles.saveBtn, saving && styles.btnDisabled]} 
+          style={[styles.btnSave, saving && styles.btnDisabled]} 
           onPress={handleSave}
           disabled={saving}
         >
           <View style={styles.saveBtnContent}>
             {saving && <ActivityIndicator size="small" color="#fff" style={styles.inlineSpinner} />}
-            <Text style={styles.btnText}>Save</Text>
+            <Text style={styles.btnSaveText}>Save</Text>
           </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.btnCancel} 
+          onPress={handleCancel}
+          disabled={saving}
+        >
+          <Text style={styles.btnCancelText}>Cancel</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -360,10 +396,11 @@ export default function CardEditScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#E3E4DD',
   },
   content: {
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingTop: 20,
     paddingBottom: 40,
   },
   center: {
@@ -371,17 +408,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#E3E4DD',
   },
   form: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     padding: 20,
     borderRadius: 12,
     marginBottom: 25,
     shadowColor: '#000',
     shadowOpacity: 0.04,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
     elevation: 1,
   },
   fieldGroup: {
@@ -390,25 +427,29 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#555',
+    color: '#1A1A1A',
     marginBottom: 5,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ced4da',
+    borderColor: '#D1D5DB',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    color: '#212529',
-    backgroundColor: '#fff',
+    color: '#1A1A1A',
+    backgroundColor: '#FFFFFF',
     flex: 1,
   },
+  inputFocused: {
+    borderColor: '#2E1028',
+    borderWidth: 1.5,
+  },
   inputError: {
-    borderColor: '#dc3545',
+    borderColor: '#DC2626',
   },
   errorLabel: {
-    color: '#dc3545',
+    color: '#DC2626',
     fontSize: 12,
     marginTop: 4,
     marginLeft: 4,
@@ -420,7 +461,7 @@ const styles = StyleSheet.create({
   listFieldContainer: {
     marginTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#f1f3f5',
+    borderTopColor: '#D1D5DB',
     paddingTop: 15,
     marginBottom: 10,
   },
@@ -436,7 +477,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   btnAddText: {
-    color: '#007bff',
+    color: '#2E1028',
     fontWeight: 'bold',
     fontSize: 14,
   },
@@ -451,12 +492,12 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#dc3545',
+    color: '#DC2626',
     fontWeight: '500',
     marginBottom: 20,
   },
   btnBack: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#2E1028',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -466,25 +507,34 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 15,
   },
-  actions: {
-    flexDirection: 'row',
-    gap: 15,
+  actionsContainer: {
+    width: '100%',
+    marginTop: 10,
+    gap: 12,
   },
-  btn: {
-    flex: 1,
+  btnSave: {
+    backgroundColor: '#2E1028',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
-    justifyContent: 'center',
+    width: '100%',
   },
-  saveBtn: {
-    backgroundColor: '#28a745',
+  btnCancel: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#DC2626',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    width: '100%',
   },
-  cancelBtn: {
-    backgroundColor: '#6c757d',
-  },
-  btnText: {
+  btnSaveText: {
     color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  btnCancelText: {
+    color: '#DC2626',
     fontWeight: 'bold',
     fontSize: 16,
   },

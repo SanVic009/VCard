@@ -35,7 +35,7 @@ const CardItem = React.memo(({ item, onPress, onLongPress, isSelectMode, isSelec
           <MaterialIcons
             name={isSelected ? "check-box" : "check-box-outline-blank"}
             size={24}
-            color={isSelected ? "#007bff" : "#adb5bd"}
+            color={isSelected ? "#2E1028" : "#6B6B6B"}
           />
         </View>
       )}
@@ -45,7 +45,7 @@ const CardItem = React.memo(({ item, onPress, onLongPress, isSelectMode, isSelec
       </View>
       <View style={styles.cardMeta}>
         <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
-        {!isSelectMode && <MaterialIcons name="chevron-right" size={20} color="#ccc" />}
+        {!isSelectMode && <MaterialIcons name="chevron-right" size={20} color="#6B7280" />}
       </View>
     </TouchableOpacity>
   );
@@ -407,7 +407,7 @@ export default function DashboardScreen() {
       ) : (
         <View style={styles.searchRow}>
           <View style={styles.searchBarContainer}>
-            <MaterialIcons name="search" size={20} color="#888" style={styles.searchIcon} />
+            <MaterialIcons name="search" size={20} color="#2E1028" style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search name or company..."
@@ -417,7 +417,7 @@ export default function DashboardScreen() {
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
-                <MaterialIcons name="close" size={20} color="#888" />
+                <MaterialIcons name="close" size={20} color="#6B7280" />
               </TouchableOpacity>
             )}
           </View>
@@ -429,7 +429,7 @@ export default function DashboardScreen() {
             <MaterialIcons 
               name="tune" 
               size={22} 
-              color={(filterActive || sortBy !== 'created_desc') ? '#fff' : '#495057'} 
+              color="#2E1028" 
             />
           </TouchableOpacity>
         </View>
@@ -518,7 +518,7 @@ export default function DashboardScreen() {
                 <Text style={[styles.optionText, sortBy === 'created_desc' && styles.optionTextActive]}>
                   Created Date (Newest first)
                 </Text>
-                {sortBy === 'created_desc' && <MaterialIcons name="check" size={20} color="#007bff" />}
+                {sortBy === 'created_desc' && <MaterialIcons name="check" size={20} color="#2E1028" />}
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -528,7 +528,7 @@ export default function DashboardScreen() {
                 <Text style={[styles.optionText, sortBy === 'created_asc' && styles.optionTextActive]}>
                   Created Date (Oldest first)
                 </Text>
-                {sortBy === 'created_asc' && <MaterialIcons name="check" size={20} color="#007bff" />}
+                {sortBy === 'created_asc' && <MaterialIcons name="check" size={20} color="#2E1028" />}
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -538,7 +538,7 @@ export default function DashboardScreen() {
                 <Text style={[styles.optionText, sortBy === 'name_asc' && styles.optionTextActive]}>
                   Name (A - Z)
                 </Text>
-                {sortBy === 'name_asc' && <MaterialIcons name="check" size={20} color="#007bff" />}
+                {sortBy === 'name_asc' && <MaterialIcons name="check" size={20} color="#2E1028" />}
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -548,7 +548,7 @@ export default function DashboardScreen() {
                 <Text style={[styles.optionText, sortBy === 'name_desc' && styles.optionTextActive]}>
                   Name (Z - A)
                 </Text>
-                {sortBy === 'name_desc' && <MaterialIcons name="check" size={20} color="#007bff" />}
+                {sortBy === 'name_desc' && <MaterialIcons name="check" size={20} color="#2E1028" />}
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -558,7 +558,7 @@ export default function DashboardScreen() {
                 <Text style={[styles.optionText, sortBy === 'company_asc' && styles.optionTextActive]}>
                   Company (A - Z)
                 </Text>
-                {sortBy === 'company_asc' && <MaterialIcons name="check" size={20} color="#007bff" />}
+                {sortBy === 'company_asc' && <MaterialIcons name="check" size={20} color="#2E1028" />}
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -568,7 +568,7 @@ export default function DashboardScreen() {
                 <Text style={[styles.optionText, sortBy === 'company_desc' && styles.optionTextActive]}>
                   Company (Z - A)
                 </Text>
-                {sortBy === 'company_desc' && <MaterialIcons name="check" size={20} color="#007bff" />}
+                {sortBy === 'company_desc' && <MaterialIcons name="check" size={20} color="#2E1028" />}
               </TouchableOpacity>
 
               {/* Filter Section */}
@@ -584,7 +584,7 @@ export default function DashboardScreen() {
                 <MaterialIcons 
                   name={filterHasPhone ? "check-box" : "check-box-outline-blank"} 
                   size={20} 
-                  color={filterHasPhone ? "#007bff" : "#666"} 
+                  color={filterHasPhone ? "#2E1028" : "#6B6B6B"} 
                 />
               </TouchableOpacity>
 
@@ -598,7 +598,7 @@ export default function DashboardScreen() {
                 <MaterialIcons 
                   name={filterHasEmail ? "check-box" : "check-box-outline-blank"} 
                   size={20} 
-                  color={filterHasEmail ? "#007bff" : "#666"} 
+                  color={filterHasEmail ? "#2E1028" : "#6B6B6B"} 
                 />
               </TouchableOpacity>
 
@@ -612,7 +612,7 @@ export default function DashboardScreen() {
                 <MaterialIcons 
                   name={filterHasWebsite ? "check-box" : "check-box-outline-blank"} 
                   size={20} 
-                  color={filterHasWebsite ? "#007bff" : "#666"} 
+                  color={filterHasWebsite ? "#2E1028" : "#6B6B6B"} 
                 />
               </TouchableOpacity>
             </ScrollView>
@@ -635,7 +635,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#E3E4DD',
   },
   overlay: {
     ...StyleSheet.absoluteFill,
@@ -658,8 +658,8 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    marginTop: 15,
+    paddingHorizontal: 16,
+    marginTop: 16,
     marginBottom: 5,
     gap: 10,
   },
@@ -672,11 +672,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     height: 48,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#D1D5DB',
     shadowColor: '#000',
     shadowOpacity: 0.02,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
     elevation: 1,
   },
   filterButton: {
@@ -687,16 +687,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#D1D5DB',
     shadowColor: '#000',
     shadowOpacity: 0.02,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
     elevation: 1,
   },
   filterButtonActive: {
-    backgroundColor: '#007bff',
-    borderColor: '#007bff',
+    backgroundColor: '#fff',
+    borderColor: '#2E1028',
+    borderWidth: 2,
   },
   searchIcon: {
     marginRight: 8,
@@ -705,13 +706,14 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
     fontSize: 15,
-    color: '#333',
+    color: '#1A1A1A',
   },
   clearButton: {
     padding: 5,
   },
   listContainer: {
-    padding: 15,
+    paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 90,
   },
   modalOverlay: {
@@ -739,7 +741,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#212529',
+    color: '#1A1A1A',
   },
   modalScroll: {
     marginVertical: 15,
@@ -747,7 +749,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#868e96',
+    color: '#6B7280',
     textTransform: 'uppercase',
     marginBottom: 10,
   },
@@ -761,10 +763,10 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 15,
-    color: '#495057',
+    color: '#6B7280',
   },
   optionTextActive: {
-    color: '#007bff',
+    color: '#2E1028',
     fontWeight: '600',
   },
   modalFooter: {
@@ -777,20 +779,20 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#dee2e6',
+    borderColor: '#D1D5DB',
     justifyContent: 'center',
     alignItems: 'center',
   },
   resetBtnText: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#495057',
+    color: '#6B6B6B',
   },
   applyBtn: {
     flex: 1,
     height: 48,
     borderRadius: 8,
-    backgroundColor: '#007bff',
+    backgroundColor: '#2E1028',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -801,7 +803,7 @@ const styles = StyleSheet.create({
   },
   clearFilterButton: {
     marginTop: 15,
-    backgroundColor: '#007bff',
+    backgroundColor: '#2E1028',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -815,14 +817,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     padding: 16,
-    borderRadius: 10,
-    marginBottom: 10,
+    borderRadius: 12,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
     elevation: 1,
   },
   cardInfo: {
@@ -832,12 +834,12 @@ const styles = StyleSheet.create({
   cardName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#212529',
+    color: '#1A1A1A',
     marginBottom: 4,
   },
   cardCompany: {
-    fontSize: 13,
-    color: '#6c757d',
+    fontSize: 14,
+    color: '#6B6B6B',
   },
   cardMeta: {
     flexDirection: 'row',
@@ -846,30 +848,26 @@ const styles = StyleSheet.create({
   },
   cardDate: {
     fontSize: 12,
-    color: '#adb5bd',
+    color: '#6B6B6B',
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#495057',
+    color: '#1A1A1A',
     marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#6c757d',
+    color: '#6B6B6B',
     textAlign: 'center',
     marginBottom: 20,
   },
   emptyButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#2E1028',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
-    shadowColor: '#007bff',
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 6,
-    elevation: 3,
+    elevation: 1,
   },
   emptyButtonText: {
     color: '#fff',
@@ -882,12 +880,12 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: 'red',
+    color: '#DC2626',
     marginBottom: 10,
     textAlign: 'center',
   },
   retryButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#2E1028',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 5,
@@ -917,9 +915,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
   },
   fabSmall: {
     width: 50,
@@ -927,17 +925,17 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 5,
+    elevation: 1,
     shadowColor: '#000',
     shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
   },
   cameraFab: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#2E1028',
   },
   galleryFab: {
-    backgroundColor: '#6c757d',
+    backgroundColor: '#6B6B6B',
   },
   fab: {
     position: 'absolute',
@@ -947,17 +945,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     right: 20,
     bottom: 20,
-    backgroundColor: '#28a745',
+    backgroundColor: '#2E1028',
     borderRadius: 30,
-    elevation: 8,
+    elevation: 1,
     shadowColor: '#000',
     shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
     zIndex: 2,
   },
   fabOpen: {
-    backgroundColor: '#dc3545',
+    backgroundColor: '#DC2626',
   },
   selectActionBar: {
     flexDirection: 'row',
@@ -969,12 +967,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#D1D5DB',
     shadowColor: '#000',
     shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
   },
   selectActionLeft: {
     flexDirection: 'row',
@@ -992,7 +990,7 @@ const styles = StyleSheet.create({
   selectCountText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#212529',
+    color: '#1A1A1A',
   },
   selectAllBtn: {
     paddingVertical: 6,
@@ -1003,7 +1001,7 @@ const styles = StyleSheet.create({
   selectAllBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#007bff',
+    color: '#2E1028',
   },
   deleteBtn: {
     padding: 6,
@@ -1014,8 +1012,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   cardItemSelected: {
-    backgroundColor: '#f1f7fc',
-    borderColor: '#007bff',
+    backgroundColor: '#F5F5F0',
+    borderColor: '#2E1028',
     borderWidth: 1,
   },
   checkboxContainer: {

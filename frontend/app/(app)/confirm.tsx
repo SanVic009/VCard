@@ -33,12 +33,14 @@ function ListField({
   onUpdate,
   onRemove,
 }: ListFieldProps) {
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+
   return (
     <View style={styles.listFieldContainer}>
       <View style={styles.listHeaderRow}>
         <Text style={styles.label}>{label}</Text>
         <TouchableOpacity style={styles.btnAdd} onPress={onAdd}>
-          <MaterialIcons name="add" size={18} color="#007bff" />
+          <MaterialIcons name="add" size={18} color="#2E1028" />
           <Text style={styles.btnAddText}>Add</Text>
         </TouchableOpacity>
       </View>
@@ -47,15 +49,21 @@ function ListField({
         <View key={index} style={{ marginBottom: 10 }}>
           <View style={styles.listItemRow}>
             <TextInput
-              style={[styles.input, errors?.[index] ? styles.inputError : null]}
+              style={[
+                styles.input, 
+                errors?.[index] ? styles.inputError : null,
+                focusedIndex === index && styles.inputFocused
+              ]}
               value={item}
               onChangeText={(text) => onUpdate(index, text)}
               placeholder={placeholder}
               keyboardType={keyboardType}
               autoCapitalize="none"
+              onFocus={() => setFocusedIndex(index)}
+              onBlur={() => setFocusedIndex(null)}
             />
             <TouchableOpacity style={styles.btnRemove} onPress={() => onRemove(index)}>
-              <MaterialIcons name="delete-outline" size={24} color="#dc3545" />
+              <MaterialIcons name="delete-outline" size={24} color="#DC2626" />
             </TouchableOpacity>
           </View>
           {errors?.[index] ? (
@@ -87,6 +95,7 @@ export default function ConfirmScreen() {
   
   const [isSaving, setIsSaving] = useState(false);
   const [emailErrors, setEmailErrors] = useState<string[]>([]);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   // Emails helpers
   const handleAddEmail = () => {
@@ -302,7 +311,7 @@ export default function ConfirmScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size="large" color="#2E1028" />
         <Text style={styles.loadingText}>Reading business card...</Text>
       </View>
     );
@@ -311,14 +320,20 @@ export default function ConfirmScreen() {
   if (error) {
     return (
       <View style={styles.center}>
-        <MaterialIcons name="error-outline" size={48} color="#dc3545" />
+        <MaterialIcons name="error-outline" size={48} color="#DC2626" />
         <Text style={styles.errorText}>{error}</Text>
-        <View style={styles.actionRow}>
-          <TouchableOpacity style={[styles.btnSecondary, styles.flexBtn]} onPress={handleDiscard}>
-            <Text style={styles.btnTextSecondary}>Go Back</Text>
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity 
+            style={[styles.btnSave, styles.flexBtn]} 
+            onPress={processImage}
+          >
+            <Text style={styles.btnSaveText}>Try Again</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.btnPrimary, styles.flexBtn]} onPress={processImage}>
-            <Text style={styles.btnText}>Try Again</Text>
+          <TouchableOpacity 
+            style={[styles.btnDiscard, styles.flexBtn]} 
+            onPress={handleDiscard}
+          >
+            <Text style={styles.btnDiscardText}>Go Back</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -336,41 +351,53 @@ export default function ConfirmScreen() {
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Name</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, focusedField === 'name' && styles.inputFocused]}
             value={name}
             onChangeText={setName}
             placeholder="Name"
+            onFocus={() => setFocusedField('name')}
+            onBlur={() => setFocusedField(null)}
           />
         </View>
         
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Title</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, focusedField === 'title' && styles.inputFocused]}
             value={title}
             onChangeText={setTitle}
             placeholder="Title"
+            onFocus={() => setFocusedField('title')}
+            onBlur={() => setFocusedField(null)}
           />
         </View>
         
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Company</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, focusedField === 'company' && styles.inputFocused]}
             value={company}
             onChangeText={setCompany}
             placeholder="Company"
+            onFocus={() => setFocusedField('company')}
+            onBlur={() => setFocusedField(null)}
           />
         </View>
         
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Address</Text>
           <TextInput
-            style={[styles.input, styles.multilineInput]}
+            style={[
+              styles.input, 
+              styles.multilineInput, 
+              focusedField === 'address' && styles.inputFocused
+            ]}
             value={address}
             onChangeText={setAddress}
             placeholder="Address"
             multiline
+            onFocus={() => setFocusedField('address')}
+            onBlur={() => setFocusedField(null)}
           />
         </View>
 
@@ -406,24 +433,24 @@ export default function ConfirmScreen() {
         />
       </View>
 
-      <View style={styles.actionRow}>
+      <View style={styles.actionsContainer}>
         <TouchableOpacity 
-          style={[styles.btnSecondary, styles.flexBtn]} 
-          onPress={handleDiscard}
-          disabled={isSaving}
-        >
-          <Text style={styles.btnTextSecondary}>Discard</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.btnPrimary, styles.flexBtn, isSaving && styles.btnDisabled]} 
+          style={[styles.btnSave, isSaving && styles.btnDisabled]} 
           onPress={handleSave}
           disabled={isSaving}
         >
           <View style={styles.saveBtnContent}>
             {isSaving && <ActivityIndicator size="small" color="#fff" style={styles.inlineSpinner} />}
-            <Text style={styles.btnText}>Save</Text>
+            <Text style={styles.btnSaveText}>Save</Text>
           </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.btnDiscard} 
+          onPress={handleDiscard}
+          disabled={isSaving}
+        >
+          <Text style={styles.btnDiscardText}>Discard</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -433,10 +460,11 @@ export default function ConfirmScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#E3E4DD',
   },
   content: {
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingTop: 20,
     paddingBottom: 40,
   },
   center: {
@@ -444,35 +472,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#E3E4DD',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#333',
+    color: '#1A1A1A',
   },
   loadingText: {
     marginTop: 15,
     fontSize: 16,
-    color: '#555',
+    color: '#6B6B6B',
   },
   errorText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#dc3545',
+    color: '#DC2626',
     textAlign: 'center',
     marginBottom: 20,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 15,
     shadowColor: '#000',
     shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
     marginBottom: 20,
   },
   fieldGroup: {
@@ -481,25 +509,29 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#555',
+    color: '#1A1A1A',
     marginBottom: 5,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ced4da',
+    borderColor: '#D1D5DB',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    color: '#212529',
-    backgroundColor: '#fff',
+    color: '#1A1A1A',
+    backgroundColor: '#FFFFFF',
     flex: 1,
   },
+  inputFocused: {
+    borderColor: '#2E1028',
+    borderWidth: 1.5,
+  },
   inputError: {
-    borderColor: '#dc3545',
+    borderColor: '#DC2626',
   },
   errorLabel: {
-    color: '#dc3545',
+    color: '#DC2626',
     fontSize: 12,
     marginTop: 4,
     marginLeft: 4,
@@ -511,7 +543,7 @@ const styles = StyleSheet.create({
   listFieldContainer: {
     marginTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#f1f3f5',
+    borderTopColor: '#D1D5DB',
     paddingTop: 15,
     marginBottom: 10,
   },
@@ -527,7 +559,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   btnAddText: {
-    color: '#007bff',
+    color: '#2E1028',
     fontWeight: 'bold',
     fontSize: 14,
   },
@@ -552,35 +584,51 @@ const styles = StyleSheet.create({
   btnDisabled: {
     backgroundColor: '#a2a8b3',
   },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 15,
+  actionsContainer: {
+    width: '100%',
     marginTop: 10,
+    gap: 12,
   },
   flexBtn: {
-    flex: 1,
+    width: '100%',
   },
-  btnPrimary: {
-    backgroundColor: '#007bff',
+  btnSave: {
+    backgroundColor: '#2E1028',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
+    width: '100%',
   },
-  btnSecondary: {
+  btnDiscard: {
     backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#007bff',
+    borderWidth: 1.5,
+    borderColor: '#DC2626',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
+    width: '100%',
   },
-  btnText: {
+  btnSaveText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
   },
-  btnTextSecondary: {
-    color: '#007bff',
+  btnDiscardText: {
+    color: '#DC2626',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  btnPrimary: {
+    backgroundColor: '#2E1028',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 15,
+  },
+  btnText: {
+    color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 16,
   }

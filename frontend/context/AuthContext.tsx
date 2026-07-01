@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import { getAccessToken, saveTokens, clearTokens } from '../lib/storage';
-import { login as apiLogin, signup as apiSignup, logout as apiLogout, getMe, UserInfo } from '../lib/api';
+import { login as apiLogin, signup as apiSignup, logout as apiLogout, getMe, UserInfo, registerUnauthorizedHandler } from '../lib/api';
 import axios from 'axios';
 
 type AuthContextType = {
@@ -22,6 +22,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    registerUnauthorizedHandler(async () => {
+      await clearTokens();
+      setUser(null);
+    });
+
     const initAuth = async () => {
       try {
         const token = await getAccessToken();
@@ -31,8 +36,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setUser(null);
         }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
+      } catch (error: any) {
+        console.log('Auth initialization info: No active session or session expired.', error.message || error);
         await clearTokens();
         setUser(null);
       } finally {
@@ -85,8 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await apiLogout();
-    } catch (error) {
-      console.error('Logout error (ignored):', error);
+    } catch (error: any) {
+      console.log('Logout error (ignored):', error.message || error);
     } finally {
       await clearTokens();
       setUser(null);
