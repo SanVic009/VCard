@@ -77,6 +77,9 @@ class EnrichmentRepository:
     def link_card_to_company(self, card_id: str, company_id: str) -> None:
         self.supabase.table("business_cards").update({"company_id": company_id}).eq("id", card_id).execute()
 
+    def update_card_company_name(self, card_id: str, company_name: str) -> None:
+        self.supabase.table("business_cards").update({"company": company_name}).eq("id", card_id).execute()
+
     def update_company_success(self, company_id: str, data: Dict[str, Any], raw_response: Dict[str, Any]) -> None:
         update_data = {
             "name": data.get("company_name") or data.get("name"),

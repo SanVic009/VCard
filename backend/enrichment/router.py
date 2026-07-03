@@ -47,21 +47,20 @@ def run_enrichment_task(card_id: str, repo: EnrichmentRepository, service: Enric
 
         websites = card.get("websites") or []
         company_name = card.get("company")
-        
-        # Check if neither is available
-        if not company_name and not websites:
-            logger.info(f"Skipping enrichment for Card {card_id}: neither name nor website available.")
+        primary_website = websites[0].strip() if websites and len(websites) > 0 and websites[0] else None
+
+        # Check if website is available
+        if not primary_website:
+            logger.info(f"Skipping enrichment for Card {card_id}: website not available.")
             if job_id:
                 try:
                     repo.supabase.table("enrichment_jobs").update({
                         "status": "skipped",
-                        "skipped_reason": "neither name nor website available"
+                        "skipped_reason": "website not available"
                     }).eq("id", job_id).execute()
                 except Exception as e:
                     logger.error(f"Failed to update skipped status in Supabase: {e}")
             return
-
-        primary_website = websites[0].strip() if websites and len(websites) > 0 and websites[0] else None
 
         # 3. Run deduplication check
         existing_company = repo.find_existing_company(websites, company_name)
@@ -100,6 +99,15 @@ def run_enrichment_task(card_id: str, repo: EnrichmentRepository, service: Enric
             
             # 6. On success: update companies row and set status: 'completed'
             repo.update_company_success(company_id, result, result)
+
+            # If we get the company name in the enrichment, pass that on to the company name in the card data
+            enriched_company_name = result.get("company_name") or result.get("name")
+            if enriched_company_name:
+                try:
+                    repo.update_card_company_name(card_id, enriched_company_name)
+                except Exception as e:
+                    logger.error(f"Failed to update company name on card {card_id}: {e}")
+
             if job_id:
                 try:
                     repo.supabase.table("enrichment_jobs").update({
