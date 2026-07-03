@@ -25,6 +25,8 @@
       "package": "com.anonymous.vcard",
       "permissions": [
         "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ]
     },
@@ -69,6 +71,12 @@
         "projectId": "36417e86-37af-459f-b529-d98afd6413ed"
       }
     },
-    "owner": "sanchits-organization"
+    "owner": "sanchits-organization",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/36417e86-37af-459f-b529-d98afd6413ed"
+    }
   }
 }

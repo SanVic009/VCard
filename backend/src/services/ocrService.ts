@@ -145,14 +145,11 @@ async function delay(ms: number): Promise<void> {
 
 export async function runOcrExtraction(imagePath: string): Promise<{ cardData: CardData; rawOutput: unknown }> {
   const hfToken = (process.env.HF_TOKEN ?? "").trim();
-  if (!hfToken) {
-    throw new Error("[permanent] Missing HF_TOKEN environment variable");
-  }
+  const hfBackupToken = (process.env.HF_BACKUP_TOKEN ?? "").trim();
 
-  const client = new OpenAI({
-    baseURL: hfBaseUrl,
-    apiKey: hfToken
-  });
+  if (!hfToken && !hfBackupToken) {
+    throw new Error("[permanent] Missing HF_TOKEN and HF_BACKUP_TOKEN environment variables");
+  }
 
   const absolutePath = path.resolve(imagePath);
   const imageBuffer = await fs.readFile(absolutePath);
@@ -163,6 +160,25 @@ export async function runOcrExtraction(imagePath: string): Promise<{ cardData: C
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt += 1) {
+    let activeToken = hfToken;
+    const lastErrorStatus =
+      typeof lastError === "object" && lastError !== null && "status" in lastError
+        ? ((lastError as { status: number }).status as number)
+        : undefined;
+
+    if ((!activeToken || lastErrorStatus === 401 || lastErrorStatus === 403) && hfBackupToken) {
+      activeToken = hfBackupToken;
+    }
+
+    if (!activeToken) {
+      throw new Error("[permanent] Missing Hugging Face API token");
+    }
+
+    const client = new OpenAI({
+      baseURL: hfBaseUrl,
+      apiKey: activeToken
+    });
+
     try {
       const completion = await client.chat.completions.create({
         model: hfModel,
@@ -192,7 +208,11 @@ export async function runOcrExtraction(imagePath: string): Promise<{ cardData: C
       lastError = error;
       const classified = classifyError(error);
 
-      if (classified.type === "permanent" || attempt === MAX_RETRIES) {
+      const isAuthError = classified.message.includes("401") || classified.message.includes("403");
+      const isBackupTokenInUse = activeToken === hfBackupToken;
+      const canFallback = isAuthError && !isBackupTokenInUse && !!hfBackupToken;
+
+      if ((classified.type === "permanent" && !canFallback) || attempt === MAX_RETRIES) {
         break;
       }
 
