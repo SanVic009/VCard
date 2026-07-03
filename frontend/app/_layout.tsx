@@ -32,7 +32,8 @@ export default function RootLayout() {
   useEffect(() => {
     const pingServer = async () => {
       try {
-        await axios.get(`${API_URL}/`);
+        const cleanUrl = API_URL.endsWith('/') ? API_URL : `${API_URL}/`;
+        await axios.get(cleanUrl);
       } catch (err) {
         // Silently ignore ping errors
       }

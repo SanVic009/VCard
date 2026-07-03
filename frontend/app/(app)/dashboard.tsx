@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Pressable, TextInput, Modal, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Pressable, TextInput, Modal, ScrollView, Image } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
@@ -58,6 +58,10 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isFabOpen, setIsFabOpen] = useState(false);
+
+  // Camera multi-capture preview state
+  const [capturedImages, setCapturedImages] = useState<any[]>([]);
+  const [showCameraPreview, setShowCameraPreview] = useState(false);
 
   // Multi-select state
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -210,17 +214,63 @@ export default function DashboardScreen() {
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) return;
 
-    const result1 = await ImagePicker.launchCameraAsync({
+    const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
       allowsEditing: false,
       quality: 1,
     });
     
-    if (result1.canceled || !result1.assets || result1.assets.length === 0) {
+    if (result.canceled || !result.assets || result.assets.length === 0) {
       return;
     }
 
-    await handleImageResult(result1);
+    try {
+      setIsProcessing(true);
+      const processed = await processImage(result.assets[0].uri);
+      setCapturedImages([processed]);
+      setShowCameraPreview(true);
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to process image.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleAddSecondImage = async () => {
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) return;
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 1,
+    });
+
+    if (result.canceled || !result.assets || result.assets.length === 0) {
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      const processed = await processImage(result.assets[0].uri);
+      setCapturedImages(prev => [...prev, processed]);
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to process image.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleContinue = () => {
+    setSelectedImages(capturedImages);
+    setCapturedImages([]);
+    setShowCameraPreview(false);
+    router.push('/(app)/review');
+  };
+
+  const handleRetake = () => {
+    setCapturedImages([]);
+    setShowCameraPreview(false);
   };
 
   const openGallery = async () => {
@@ -628,6 +678,69 @@ export default function DashboardScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Camera Preview Modal */}
+      <Modal
+        visible={showCameraPreview}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={handleRetake}
+      >
+        <View style={styles.previewModalOverlay}>
+          <View style={styles.previewModalContent}>
+            {isProcessing && (
+              <View style={styles.previewLoadingOverlay}>
+                <ActivityIndicator size="large" color="#2E1028" />
+                <Text style={styles.previewLoadingText}>Processing image...</Text>
+              </View>
+            )}
+
+            <Text style={styles.previewTitle}>Camera Preview</Text>
+            <Text style={styles.previewSubtitle}>
+              {capturedImages.length === 1 
+                ? "You've captured 1 image. You can add a second image or continue."
+                : "You've captured 2 images. Review them before proceeding."}
+            </Text>
+
+            {capturedImages.length === 1 ? (
+              <Image 
+                source={{ uri: capturedImages[0].uri }} 
+                style={styles.previewImageSingle} 
+                resizeMode="cover"
+              />
+            ) : capturedImages.length >= 2 ? (
+              <View style={styles.previewImagesRow}>
+                <Image 
+                  source={{ uri: capturedImages[0].uri }} 
+                  style={styles.previewImageSide} 
+                  resizeMode="cover"
+                />
+                <Image 
+                  source={{ uri: capturedImages[1].uri }} 
+                  style={styles.previewImageSide} 
+                  resizeMode="cover"
+                />
+              </View>
+            ) : null}
+
+            <View style={styles.previewActions}>
+              <TouchableOpacity style={styles.previewBtnPrimary} onPress={handleContinue}>
+                <Text style={styles.previewBtnPrimaryText}>Continue</Text>
+              </TouchableOpacity>
+
+              {capturedImages.length === 1 && (
+                <TouchableOpacity style={styles.previewBtnSecondary} onPress={handleAddSecondImage}>
+                  <Text style={styles.previewBtnSecondaryText}>Add Second Image</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity style={styles.previewBtnDanger} onPress={handleRetake}>
+                <Text style={styles.previewBtnDangerText}>Retake</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1020,5 +1133,119 @@ const styles = StyleSheet.create({
     marginRight: 12,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  previewModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  previewModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 400,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 5,
+    position: 'relative',
+  },
+  previewTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+    marginBottom: 6,
+  },
+  previewSubtitle: {
+    fontSize: 14,
+    color: '#6B6B6B',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  previewImageSingle: {
+    width: '100%',
+    aspectRatio: 1.58,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F3F4F6',
+    marginBottom: 20,
+  },
+  previewImagesRow: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 12,
+    marginBottom: 20,
+  },
+  previewImageSide: {
+    flex: 1,
+    aspectRatio: 0.75,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F3F4F6',
+  },
+  previewActions: {
+    width: '100%',
+    gap: 12,
+  },
+  previewBtnPrimary: {
+    backgroundColor: '#2E1028',
+    height: 48,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  previewBtnPrimaryText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  previewBtnSecondary: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#2E1028',
+    height: 48,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  previewBtnSecondaryText: {
+    color: '#2E1028',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  previewBtnDanger: {
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    marginTop: 4,
+  },
+  previewBtnDangerText: {
+    color: '#DC2626',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  previewLoadingOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  previewLoadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2E1028',
   }
 });
