@@ -6,10 +6,10 @@ export function useCard(cardId: string) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCard = useCallback(async () => {
+  const fetchCard = useCallback(async (background = false) => {
     if (!cardId) return;
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
       setError(null);
       const data = await getCard(cardId);
       setCard(data);
@@ -17,7 +17,7 @@ export function useCard(cardId: string) {
       const message = err.response?.data?.error?.message || err.response?.data?.detail || err.message || "Failed to load card";
       setError(message);
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   }, [cardId]);
 

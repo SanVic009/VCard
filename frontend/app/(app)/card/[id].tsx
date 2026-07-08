@@ -40,7 +40,7 @@ export default function CardDetailScreen() {
 
     const poll = async () => {
       try {
-        await refresh();
+        await refresh(true);
       } catch (err: any) {
         console.error("Failed to poll card update:", err);
         const status = err.response?.status;

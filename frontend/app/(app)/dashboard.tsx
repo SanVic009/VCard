@@ -59,10 +59,6 @@ export default function DashboardScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isFabOpen, setIsFabOpen] = useState(false);
 
-  // Camera multi-capture preview state
-  const [capturedImages, setCapturedImages] = useState<any[]>([]);
-  const [showCameraPreview, setShowCameraPreview] = useState(false);
-
   // Multi-select state
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
@@ -199,9 +195,9 @@ export default function DashboardScreen() {
       const processedImages = await Promise.all(
         assetsToProcess.map(asset => processImage(asset.uri))
       );
-      
+
       setSelectedImages(processedImages);
-      router.push('/(app)/review');
+      router.push('/(app)/confirm' as any);
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to process image.");
     } finally {
@@ -216,33 +212,7 @@ export default function DashboardScreen() {
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 1,
-    });
-    
-    if (result.canceled || !result.assets || result.assets.length === 0) {
-      return;
-    }
-
-    try {
-      setIsProcessing(true);
-      const processed = await processImage(result.assets[0].uri);
-      setCapturedImages([processed]);
-      setShowCameraPreview(true);
-    } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to process image.");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleAddSecondImage = async () => {
-    const hasPermission = await requestCameraPermission();
-    if (!hasPermission) return;
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
+      allowsEditing: true,
       quality: 1,
     });
 
@@ -253,24 +223,13 @@ export default function DashboardScreen() {
     try {
       setIsProcessing(true);
       const processed = await processImage(result.assets[0].uri);
-      setCapturedImages(prev => [...prev, processed]);
+      setSelectedImages([processed]);
+      router.push('/(app)/card-capture' as any);
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to process image.");
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const handleContinue = () => {
-    setSelectedImages(capturedImages);
-    setCapturedImages([]);
-    setShowCameraPreview(false);
-    router.push('/(app)/review');
-  };
-
-  const handleRetake = () => {
-    setCapturedImages([]);
-    setShowCameraPreview(false);
   };
 
   const openGallery = async () => {
@@ -282,10 +241,10 @@ export default function DashboardScreen() {
       mediaTypes: ['images'],
       allowsMultipleSelection: true,
       selectionLimit: 2,
-      allowsEditing: false,
+      allowsEditing: true,
       quality: 1,
     });
-    
+
     await handleImageResult(result);
   };
 
@@ -316,7 +275,7 @@ export default function DashboardScreen() {
 
   const handlePressCard = useCallback((id: string) => {
     if (isSelectMode) {
-      setSelectedCardIds(prev => 
+      setSelectedCardIds(prev =>
         prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
       );
     } else {
@@ -346,14 +305,14 @@ export default function DashboardScreen() {
 
   const handleDeleteSelected = () => {
     if (selectedCardIds.length === 0) return;
-    
+
     Alert.alert(
       "Delete Cards",
       `Are you sure you want to delete the ${selectedCardIds.length} selected card(s)? This action cannot be undone.`,
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete", 
+        {
+          text: "Delete",
           style: "destructive",
           onPress: async () => {
             try {
@@ -410,7 +369,7 @@ export default function DashboardScreen() {
         </View>
       );
     }
-    
+
     return (
       <View style={styles.centerEmpty}>
         <MaterialIcons name="contact-mail" size={64} color="#007bff" style={{ marginBottom: 15 }} />
@@ -445,8 +404,8 @@ export default function DashboardScreen() {
                 {selectedCardIds.length === processedCards.length ? "Deselect All" : "Select All"}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={handleDeleteSelected} 
+            <TouchableOpacity
+              onPress={handleDeleteSelected}
               style={[styles.deleteBtn, selectedCardIds.length === 0 && styles.deleteBtnDisabled]}
               disabled={selectedCardIds.length === 0}
             >
@@ -471,15 +430,15 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             )}
           </View>
-          <TouchableOpacity 
-            style={[styles.filterButton, (filterActive || sortBy !== 'created_desc') && styles.filterButtonActive]} 
+          <TouchableOpacity
+            style={[styles.filterButton, (filterActive || sortBy !== 'created_desc') && styles.filterButtonActive]}
             onPress={() => setShowFilterModal(true)}
             accessibilityLabel="Sort and filter cards"
           >
-            <MaterialIcons 
-              name="tune" 
-              size={22} 
-              color="#2E1028" 
+            <MaterialIcons
+              name="tune"
+              size={22}
+              color="#2E1028"
             />
           </TouchableOpacity>
         </View>
@@ -528,8 +487,8 @@ export default function DashboardScreen() {
 
       {/* Main FAB */}
       {!isSelectMode && (
-        <TouchableOpacity 
-          style={[styles.fab, isFabOpen && styles.fabOpen]} 
+        <TouchableOpacity
+          style={[styles.fab, isFabOpen && styles.fabOpen]}
           onPress={() => setIsFabOpen(!isFabOpen)}
           disabled={isProcessing}
         >
@@ -560,9 +519,9 @@ export default function DashboardScreen() {
             <ScrollView style={styles.modalScroll}>
               {/* Sort Section */}
               <Text style={styles.sectionTitle}>Sort By</Text>
-              
-              <TouchableOpacity 
-                style={styles.optionRow} 
+
+              <TouchableOpacity
+                style={styles.optionRow}
                 onPress={() => setSortBy('created_desc')}
               >
                 <Text style={[styles.optionText, sortBy === 'created_desc' && styles.optionTextActive]}>
@@ -571,8 +530,8 @@ export default function DashboardScreen() {
                 {sortBy === 'created_desc' && <MaterialIcons name="check" size={20} color="#2E1028" />}
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.optionRow} 
+              <TouchableOpacity
+                style={styles.optionRow}
                 onPress={() => setSortBy('created_asc')}
               >
                 <Text style={[styles.optionText, sortBy === 'created_asc' && styles.optionTextActive]}>
@@ -581,8 +540,8 @@ export default function DashboardScreen() {
                 {sortBy === 'created_asc' && <MaterialIcons name="check" size={20} color="#2E1028" />}
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.optionRow} 
+              <TouchableOpacity
+                style={styles.optionRow}
                 onPress={() => setSortBy('name_asc')}
               >
                 <Text style={[styles.optionText, sortBy === 'name_asc' && styles.optionTextActive]}>
@@ -591,8 +550,8 @@ export default function DashboardScreen() {
                 {sortBy === 'name_asc' && <MaterialIcons name="check" size={20} color="#2E1028" />}
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.optionRow} 
+              <TouchableOpacity
+                style={styles.optionRow}
                 onPress={() => setSortBy('name_desc')}
               >
                 <Text style={[styles.optionText, sortBy === 'name_desc' && styles.optionTextActive]}>
@@ -601,8 +560,8 @@ export default function DashboardScreen() {
                 {sortBy === 'name_desc' && <MaterialIcons name="check" size={20} color="#2E1028" />}
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.optionRow} 
+              <TouchableOpacity
+                style={styles.optionRow}
                 onPress={() => setSortBy('company_asc')}
               >
                 <Text style={[styles.optionText, sortBy === 'company_asc' && styles.optionTextActive]}>
@@ -611,8 +570,8 @@ export default function DashboardScreen() {
                 {sortBy === 'company_asc' && <MaterialIcons name="check" size={20} color="#2E1028" />}
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.optionRow} 
+              <TouchableOpacity
+                style={styles.optionRow}
                 onPress={() => setSortBy('company_desc')}
               >
                 <Text style={[styles.optionText, sortBy === 'company_desc' && styles.optionTextActive]}>
@@ -624,45 +583,45 @@ export default function DashboardScreen() {
               {/* Filter Section */}
               <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Filter By Fields</Text>
 
-              <TouchableOpacity 
-                style={styles.optionRow} 
+              <TouchableOpacity
+                style={styles.optionRow}
                 onPress={() => setFilterHasPhone(!filterHasPhone)}
               >
                 <Text style={[styles.optionText, filterHasPhone && styles.optionTextActive]}>
                   Has Phone Number
                 </Text>
-                <MaterialIcons 
-                  name={filterHasPhone ? "check-box" : "check-box-outline-blank"} 
-                  size={20} 
-                  color={filterHasPhone ? "#2E1028" : "#6B6B6B"} 
+                <MaterialIcons
+                  name={filterHasPhone ? "check-box" : "check-box-outline-blank"}
+                  size={20}
+                  color={filterHasPhone ? "#2E1028" : "#6B6B6B"}
                 />
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.optionRow} 
+              <TouchableOpacity
+                style={styles.optionRow}
                 onPress={() => setFilterHasEmail(!filterHasEmail)}
               >
                 <Text style={[styles.optionText, filterHasEmail && styles.optionTextActive]}>
                   Has Email
                 </Text>
-                <MaterialIcons 
-                  name={filterHasEmail ? "check-box" : "check-box-outline-blank"} 
-                  size={20} 
-                  color={filterHasEmail ? "#2E1028" : "#6B6B6B"} 
+                <MaterialIcons
+                  name={filterHasEmail ? "check-box" : "check-box-outline-blank"}
+                  size={20}
+                  color={filterHasEmail ? "#2E1028" : "#6B6B6B"}
                 />
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.optionRow} 
+              <TouchableOpacity
+                style={styles.optionRow}
                 onPress={() => setFilterHasWebsite(!filterHasWebsite)}
               >
                 <Text style={[styles.optionText, filterHasWebsite && styles.optionTextActive]}>
                   Has Website
                 </Text>
-                <MaterialIcons 
-                  name={filterHasWebsite ? "check-box" : "check-box-outline-blank"} 
-                  size={20} 
-                  color={filterHasWebsite ? "#2E1028" : "#6B6B6B"} 
+                <MaterialIcons
+                  name={filterHasWebsite ? "check-box" : "check-box-outline-blank"}
+                  size={20}
+                  color={filterHasWebsite ? "#2E1028" : "#6B6B6B"}
                 />
               </TouchableOpacity>
             </ScrollView>
@@ -679,68 +638,6 @@ export default function DashboardScreen() {
         </View>
       </Modal>
 
-      {/* Camera Preview Modal */}
-      <Modal
-        visible={showCameraPreview}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={handleRetake}
-      >
-        <View style={styles.previewModalOverlay}>
-          <View style={styles.previewModalContent}>
-            {isProcessing && (
-              <View style={styles.previewLoadingOverlay}>
-                <ActivityIndicator size="large" color="#2E1028" />
-                <Text style={styles.previewLoadingText}>Processing image...</Text>
-              </View>
-            )}
-
-            <Text style={styles.previewTitle}>Camera Preview</Text>
-            <Text style={styles.previewSubtitle}>
-              {capturedImages.length === 1 
-                ? "You've captured 1 image. You can add a second image or continue."
-                : "You've captured 2 images. Review them before proceeding."}
-            </Text>
-
-            {capturedImages.length === 1 ? (
-              <Image 
-                source={{ uri: capturedImages[0].uri }} 
-                style={styles.previewImageSingle} 
-                resizeMode="cover"
-              />
-            ) : capturedImages.length >= 2 ? (
-              <View style={styles.previewImagesRow}>
-                <Image 
-                  source={{ uri: capturedImages[0].uri }} 
-                  style={styles.previewImageSide} 
-                  resizeMode="cover"
-                />
-                <Image 
-                  source={{ uri: capturedImages[1].uri }} 
-                  style={styles.previewImageSide} 
-                  resizeMode="cover"
-                />
-              </View>
-            ) : null}
-
-            <View style={styles.previewActions}>
-              <TouchableOpacity style={styles.previewBtnPrimary} onPress={handleContinue}>
-                <Text style={styles.previewBtnPrimaryText}>Continue</Text>
-              </TouchableOpacity>
-
-              {capturedImages.length === 1 && (
-                <TouchableOpacity style={styles.previewBtnSecondary} onPress={handleAddSecondImage}>
-                  <Text style={styles.previewBtnSecondaryText}>Add Second Image</Text>
-                </TouchableOpacity>
-              )}
-
-              <TouchableOpacity style={styles.previewBtnDanger} onPress={handleRetake}>
-                <Text style={styles.previewBtnDangerText}>Retake</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -1133,119 +1030,5 @@ const styles = StyleSheet.create({
     marginRight: 12,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  previewModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  previewModalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    width: '100%',
-    maxWidth: 400,
-    padding: 20,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10,
-    elevation: 5,
-    position: 'relative',
-  },
-  previewTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 6,
-  },
-  previewSubtitle: {
-    fontSize: 14,
-    color: '#6B6B6B',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  previewImageSingle: {
-    width: '100%',
-    aspectRatio: 1.58,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F3F4F6',
-    marginBottom: 20,
-  },
-  previewImagesRow: {
-    flexDirection: 'row',
-    width: '100%',
-    gap: 12,
-    marginBottom: 20,
-  },
-  previewImageSide: {
-    flex: 1,
-    aspectRatio: 0.75,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F3F4F6',
-  },
-  previewActions: {
-    width: '100%',
-    gap: 12,
-  },
-  previewBtnPrimary: {
-    backgroundColor: '#2E1028',
-    height: 48,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-  },
-  previewBtnPrimaryText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  previewBtnSecondary: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#2E1028',
-    height: 48,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-  },
-  previewBtnSecondaryText: {
-    color: '#2E1028',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  previewBtnDanger: {
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    marginTop: 4,
-  },
-  previewBtnDangerText: {
-    color: '#DC2626',
-    fontWeight: 'bold',
-    fontSize: 15,
-  },
-  previewLoadingOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  previewLoadingText: {
-    marginTop: 10,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2E1028',
   }
 });

@@ -11,6 +11,10 @@
     "preview": {
       "distribution": "internal",
       "channel": "preview",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a"
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://app-ogvm.onrender.com"
       }

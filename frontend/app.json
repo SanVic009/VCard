@@ -28,7 +28,9 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
-      ]
+      ],
+      "enableProguardInReleaseBuilds": true,
+      "enableShrinkResourcesInReleaseBuilds": true
     },
     "web": {
       "output": "static",
@@ -77,7 +79,8 @@
     },
     "updates": {
       "url": "https://u.expo.dev/36417e86-37af-459f-b529-d98afd6413ed",
-      "enabled": true
+      "enabled": true,
+      "checkAutomatically" : "ON_LOAD"
     }
   }
 }
