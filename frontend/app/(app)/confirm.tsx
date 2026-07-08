@@ -253,6 +253,17 @@ export default function ConfirmScreen() {
 
     try {
       setIsSaving(true);
+      
+      let image_front_base64 = null;
+      let image_back_base64 = null;
+      
+      if (selectedImages.length > 0 && selectedImages[0].uri) {
+        image_front_base64 = await FileSystem.readAsStringAsync(selectedImages[0].uri, { encoding: FileSystem.EncodingType.Base64 });
+      }
+      if (selectedImages.length > 1 && selectedImages[1].uri) {
+        image_back_base64 = await FileSystem.readAsStringAsync(selectedImages[1].uri, { encoding: FileSystem.EncodingType.Base64 });
+      }
+
       const cardPayload = {
         name: trimmedName || null,
         title: title.trim() || null,
@@ -261,7 +272,8 @@ export default function ConfirmScreen() {
         emails: filteredEmails,
         phones: filteredPhones,
         websites: filteredWebsites,
-        image_url: selectedImages.map(img => img.uri).join(','),
+        image_front_base64,
+        image_back_base64,
         raw_extraction: data?.raw_extraction || null,
       };
 

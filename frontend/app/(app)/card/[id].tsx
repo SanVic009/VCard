@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, useWindowDimensions } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
 import { useCard } from '../../../hooks/useCard';
@@ -15,6 +16,7 @@ export default function CardDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { card, loading, error, refresh } = useCard(id as string);
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const isFirstMount = useRef(true);
@@ -234,6 +236,28 @@ export default function CardDetailScreen() {
         }} 
       />
       
+      {/* Images Section */}
+      {card.image_url_front && (
+        <View style={styles.imageContainer}>
+          <ExpoImage
+            source={{ uri: card.image_url_front }}
+            style={{ width: '100%', aspectRatio: 1.58, borderRadius: 12 }}
+            contentFit="cover"
+            transition={200}
+          />
+        </View>
+      )}
+      {card.image_url_back && (
+        <View style={styles.imageContainer}>
+          <ExpoImage
+            source={{ uri: card.image_url_back }}
+            style={{ width: '100%', aspectRatio: 1.58, borderRadius: 12 }}
+            contentFit="cover"
+            transition={200}
+          />
+        </View>
+      )}
+
       {/* Top Section Contact Card */}
       <View style={styles.topCard}>
         <Text style={styles.topName}>{card.name || '—'}</Text>
@@ -377,6 +401,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     backgroundColor: '#E3E4DD',
+  },
+  imageContainer: {
+    marginBottom: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
   },
   topCard: {
     backgroundColor: '#FFFFFF',

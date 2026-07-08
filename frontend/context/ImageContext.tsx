@@ -22,7 +22,7 @@ export function ImageProvider({ children }: { children: ReactNode }) {
         
         const files = await FileSystem.readDirectoryAsync(cacheDir);
         for (const file of files) {
-          if (file.startsWith('card_') && file.endsWith('.jpg')) {
+          if (file.startsWith('card_') && file.endsWith('.webp')) {
             const fileUri = cacheDir + file;
             try {
               await FileSystem.deleteAsync(fileUri, { idempotent: true });

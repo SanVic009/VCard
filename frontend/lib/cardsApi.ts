@@ -8,7 +8,8 @@ export interface CardCreate {
   emails?: string[];
   phones?: string[];
   websites?: string[];
-  image_url?: string | null;
+  image_front_base64?: string | null;
+  image_back_base64?: string | null;
   raw_extraction?: string | null;
 }
 
@@ -28,7 +29,8 @@ export interface CardResponse {
   user_id: string;
   created_at: string;
   updated_at: string;
-  image_url: string | null;
+  image_url_front: string | null;
+  image_url_back: string | null;
   name: string | null;
   title: string | null;
   company: string | null;

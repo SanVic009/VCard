@@ -33,12 +33,12 @@ export async function processImage(uri: string): Promise<SelectedImage> {
     
     // Step 2: Compress
     const finalResult = await ImageManipulator.manipulateAsync(uri, actions, {
-      compress: 0.85,
-      format: ImageManipulator.SaveFormat.JPEG,
+      compress: 0.75,
+      format: ImageManipulator.SaveFormat.WEBP,
     });
     
     // Step 3: Save to specific temp file location
-    const tempUri = FileSystem.cacheDirectory + "card_" + Date.now() + ".jpg";
+    const tempUri = FileSystem.cacheDirectory + "card_" + Date.now() + ".webp";
     await FileSystem.copyAsync({
       from: finalResult.uri,
       to: tempUri
@@ -65,7 +65,7 @@ export async function processImage(uri: string): Promise<SelectedImage> {
       uri: tempUri,
       width: finalResult.width,
       height: finalResult.height,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
       fileSize: fileInfo.size || 0
     };
     
@@ -87,11 +87,11 @@ export async function cropImage(uri: string, crop: CropRect): Promise<SelectedIm
     const actions: ImageManipulator.Action[] = [{ crop }];
     
     const finalResult = await ImageManipulator.manipulateAsync(uri, actions, {
-      compress: 0.85,
-      format: ImageManipulator.SaveFormat.JPEG,
+      compress: 0.75,
+      format: ImageManipulator.SaveFormat.WEBP,
     });
     
-    const tempUri = FileSystem.cacheDirectory + "card_crop_" + Date.now() + ".jpg";
+    const tempUri = FileSystem.cacheDirectory + "card_crop_" + Date.now() + ".webp";
     await FileSystem.copyAsync({
       from: finalResult.uri,
       to: tempUri
@@ -115,7 +115,7 @@ export async function cropImage(uri: string, crop: CropRect): Promise<SelectedIm
       uri: tempUri,
       width: finalResult.width,
       height: finalResult.height,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
       fileSize: fileInfo.size || 0
     };
   } catch (error) {

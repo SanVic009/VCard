@@ -10,11 +10,13 @@ class CardBase(BaseModel):
     emails: List[str] = []
     phones: List[str] = []
     websites: List[str] = []
-    image_url: Optional[str] = None
+    image_url_front: Optional[str] = None
+    image_url_back: Optional[str] = None
     raw_extraction: Optional[str] = None
 
 class CardCreate(CardBase):
-    pass
+    image_front_base64: Optional[str] = None
+    image_back_base64: Optional[str] = None
 
 class CardUpdate(BaseModel):
     name: Optional[str] = None
@@ -24,7 +26,8 @@ class CardUpdate(BaseModel):
     emails: Optional[List[str]] = None
     phones: Optional[List[str]] = None
     websites: Optional[List[str]] = None
-    image_url: Optional[str] = None
+    image_url_front: Optional[str] = None
+    image_url_back: Optional[str] = None
     raw_extraction: Optional[str] = None
 
 class CardResponse(CardBase):
@@ -32,7 +35,8 @@ class CardResponse(CardBase):
     user_id: str
     created_at: datetime
     updated_at: datetime
-    image_url: Optional[str] = None
+    image_url_front: Optional[str] = None
+    image_url_back: Optional[str] = None
     company_id: Optional[str] = None
     raw_extraction: Optional[str] = None
 

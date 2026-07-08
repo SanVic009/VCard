@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Pressable, TextInput, Modal, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Pressable, TextInput, Modal, ScrollView, Image as RNImage } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
@@ -39,6 +40,20 @@ const CardItem = React.memo(({ item, onPress, onLongPress, isSelectMode, isSelec
           />
         </View>
       )}
+      <View style={styles.thumbnailContainer}>
+        {item.image_url_front ? (
+          <ExpoImage
+            source={{ uri: item.image_url_front }}
+            style={styles.thumbnail}
+            contentFit="cover"
+            transition={200}
+          />
+        ) : (
+          <View style={styles.thumbnailPlaceholder}>
+            <MaterialIcons name="person" size={24} color="#9CA3AF" />
+          </View>
+        )}
+      </View>
       <View style={styles.cardInfo}>
         <Text style={styles.cardName}>{item.name || 'Unknown Name'}</Text>
         <Text style={styles.cardCompany}>{item.company || 'Unknown Company'}</Text>
@@ -836,6 +851,24 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 2,
     elevation: 1,
+  },
+  thumbnailContainer: {
+    width: 60,
+    height: 40,
+    borderRadius: 4,
+    marginRight: 12,
+    backgroundColor: '#F3F4F6',
+    overflow: 'hidden',
+  },
+  thumbnail: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbnailPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#E5E7EB',
   },
   cardInfo: {
     flex: 1,
