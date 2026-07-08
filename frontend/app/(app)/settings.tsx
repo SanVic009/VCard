@@ -3,8 +3,11 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { MaterialIcons } from '@expo/vector-icons';
 
+import { useImageContext } from '../../context/ImageContext';
+
 export default function SettingsScreen() {
   const { logout, user } = useAuth();
+  const { clearSelectedImages } = useImageContext();
 
   return (
     <View style={styles.container}>
@@ -42,7 +45,13 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+      <TouchableOpacity 
+        style={styles.logoutButton} 
+        onPress={async () => {
+          await clearSelectedImages();
+          logout();
+        }}
+      >
         <MaterialIcons name="logout" size={20} color="#FFFFFF" />
         <Text style={styles.logoutButtonText}>Log Out</Text>
       </TouchableOpacity>

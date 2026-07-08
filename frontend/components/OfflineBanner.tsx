@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 
@@ -6,6 +6,7 @@ export default function OfflineBanner() {
   const [isConnected, setIsConnected] = useState<boolean | null>(true);
   const [showOnlineBanner, setShowOnlineBanner] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
+  const timeoutRef = useRef<any>(null);
 
   useEffect(() => {
     let wasOffline = false;
@@ -16,6 +17,10 @@ export default function OfflineBanner() {
       if (!currentConnected) {
         wasOffline = true;
         setShowOnlineBanner(false);
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
       } else if (currentConnected && wasOffline) {
         // Came back online
         wasOffline = false;
@@ -26,19 +31,28 @@ export default function OfflineBanner() {
           useNativeDriver: true,
         }).start();
 
-        setTimeout(() => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = setTimeout(() => {
           Animated.timing(fadeAnim, {
             toValue: 0,
             duration: 300,
             useNativeDriver: true,
           }).start(() => setShowOnlineBanner(false));
+          timeoutRef.current = null;
         }, 3000);
       }
       
       setIsConnected(currentConnected);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, [fadeAnim]);
 
   if (!isConnected) {
