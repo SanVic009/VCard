@@ -18,6 +18,12 @@ export default function CardDetailScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'front' | 'back'>('front');
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [activeTab, card?.image_url_front, card?.image_url_back]);
 
   const isFirstMount = useRef(true);
 
@@ -236,28 +242,6 @@ export default function CardDetailScreen() {
         }} 
       />
       
-      {/* Images Section */}
-      {card.image_url_front && (
-        <View style={styles.imageContainer}>
-          <ExpoImage
-            source={{ uri: card.image_url_front }}
-            style={{ width: '100%', aspectRatio: 1.58, borderRadius: 12 }}
-            contentFit="cover"
-            transition={200}
-          />
-        </View>
-      )}
-      {card.image_url_back && (
-        <View style={styles.imageContainer}>
-          <ExpoImage
-            source={{ uri: card.image_url_back }}
-            style={{ width: '100%', aspectRatio: 1.58, borderRadius: 12 }}
-            contentFit="cover"
-            transition={200}
-          />
-        </View>
-      )}
-
       {/* Top Section Contact Card */}
       <View style={styles.topCard}>
         <Text style={styles.topName}>{card.name || '—'}</Text>
@@ -381,6 +365,48 @@ export default function CardDetailScreen() {
         <Text style={styles.metaText}>Created: {formatDate(card.created_at)}</Text>
         <Text style={styles.metaText}>Updated: {formatDate(card.updated_at)}</Text>
       </View>
+
+      {/* Images Section */}
+      {(card.image_url_front || card.image_url_back) && (
+        <View style={styles.imageSection}>
+          {card.image_url_front && card.image_url_back ? (
+            <View style={styles.tabContainer}>
+              <TouchableOpacity 
+                style={[styles.tabButton, activeTab === 'front' && styles.tabButtonActive]}
+                onPress={() => setActiveTab('front')}
+              >
+                <Text style={[styles.tabText, activeTab === 'front' && styles.tabTextActive]}>Front</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.tabButton, activeTab === 'back' && styles.tabButtonActive]}
+                onPress={() => setActiveTab('back')}
+              >
+                <Text style={[styles.tabText, activeTab === 'back' && styles.tabTextActive]}>Back</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          <View style={styles.imageContainer}>
+            {!imageError ? (
+              <ExpoImage
+                source={{ 
+                  uri: (((card.image_url_front && card.image_url_back)
+                    ? (activeTab === 'front' ? card.image_url_front : card.image_url_back)
+                    : (card.image_url_front || card.image_url_back)) || '').split(',')[0] || undefined
+                }}
+                style={styles.detailImage}
+                contentFit="contain"
+                transition={200}
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <View style={[styles.detailImage, { justifyContent: 'center', alignItems: 'center' }]}>
+                <MaterialIcons name="broken-image" size={48} color="#9CA3AF" />
+              </View>
+            )}
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -402,8 +428,35 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#E3E4DD',
   },
+  imageSection: {
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 4,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  tabButtonActive: {
+    backgroundColor: '#2E1028',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#6B6B6B',
+  },
+  tabTextActive: {
+    color: '#FFFFFF',
+  },
   imageContainer: {
-    marginBottom: 20,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     shadowColor: '#000',
@@ -411,6 +464,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 2,
     elevation: 1,
+    overflow: 'hidden',
+  },
+  detailImage: {
+    width: '100%',
+    height: 220,
   },
   topCard: {
     backgroundColor: '#FFFFFF',

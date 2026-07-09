@@ -13,6 +13,7 @@ import { useImageContext } from '../../context/ImageContext';
 import { CardListSkeleton } from '../../components/Skeleton';
 import { trackEvent } from '../../lib/analytics';
 import { mutationState } from '../../lib/mutationState';
+import * as Linking from 'expo-linking';
 
 interface CardItemProps {
   item: CardResponse;
@@ -20,10 +21,16 @@ interface CardItemProps {
   onLongPress?: (id: string) => void;
   isSelectMode?: boolean;
   isSelected?: boolean;
-  formatDate: (dateStr: string) => string;
+  onCallPress: (phones: string[]) => void;
 }
 
-const CardItem = React.memo(({ item, onPress, onLongPress, isSelectMode, isSelected, formatDate }: CardItemProps) => {
+const CardItem = React.memo(({ item, onPress, onLongPress, isSelectMode, isSelected, onCallPress }: CardItemProps) => {
+  const [imageError, setImageError] = useState(false);
+
+  React.useEffect(() => {
+    setImageError(false);
+  }, [item.image_url_front]);
+
   return (
     <TouchableOpacity
       style={[styles.cardItem, isSelected && styles.cardItemSelected]}
@@ -31,6 +38,7 @@ const CardItem = React.memo(({ item, onPress, onLongPress, isSelectMode, isSelec
       onLongPress={() => onLongPress && onLongPress(item.id)}
       activeOpacity={0.7}
     >
+      {/* Select Mode Checkbox (absolute positioned over image) */}
       {isSelectMode && (
         <View style={styles.checkboxContainer}>
           <MaterialIcons
@@ -40,27 +48,51 @@ const CardItem = React.memo(({ item, onPress, onLongPress, isSelectMode, isSelec
           />
         </View>
       )}
+
+      {/* Top section: Image */}
       <View style={styles.thumbnailContainer}>
-        {item.image_url_front ? (
+        {item.image_url_front && !imageError ? (
           <ExpoImage
-            source={{ uri: item.image_url_front }}
+            source={{ uri: item.image_url_front.split(',')[0] }}
             style={styles.thumbnail}
             contentFit="cover"
             transition={200}
+            onError={() => setImageError(true)}
           />
         ) : (
           <View style={styles.thumbnailPlaceholder}>
-            <MaterialIcons name="person" size={24} color="#9CA3AF" />
+            <Text style={styles.thumbnailInitials}>
+              {(item.name || '?').charAt(0).toUpperCase()}
+            </Text>
           </View>
         )}
       </View>
-      <View style={styles.cardInfo}>
-        <Text style={styles.cardName}>{item.name || 'Unknown Name'}</Text>
-        <Text style={styles.cardCompany}>{item.company || 'Unknown Company'}</Text>
-      </View>
-      <View style={styles.cardMeta}>
-        <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
-        {!isSelectMode && <MaterialIcons name="chevron-right" size={20} color="#6B7280" />}
+
+      {/* Bottom section: Info + Call */}
+      <View style={styles.bottomSection}>
+        <View style={styles.cardInfo}>
+          <Text style={styles.cardName} numberOfLines={1}>{item.name || 'Unknown Name'}</Text>
+          <Text style={styles.cardCompany} numberOfLines={1}>{item.company || 'Unknown Company'}</Text>
+        </View>
+        
+        {item.phones && item.phones.length > 0 && (
+          <React.Fragment>
+            <View style={styles.verticalDivider} />
+            <TouchableOpacity 
+              style={styles.callButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                if (item.phones.length === 1) {
+                  Linking.openURL(`tel:${item.phones[0]}`);
+                } else {
+                  onCallPress(item.phones);
+                }
+              }}
+            >
+              <MaterialIcons name="phone" size={18} color="#FFFFFF" />
+            </TouchableOpacity>
+          </React.Fragment>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -73,6 +105,10 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isFabOpen, setIsFabOpen] = useState(false);
+  
+  // Phone picker state
+  const [phonePickerVisible, setPhonePickerVisible] = useState(false);
+  const [phonePickerOptions, setPhonePickerOptions] = useState<string[]>([]);
 
   // Multi-select state
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -351,6 +387,11 @@ export default function DashboardScreen() {
     );
   };
 
+  const handleCallPress = useCallback((phones: string[]) => {
+    setPhonePickerOptions(phones);
+    setPhonePickerVisible(true);
+  }, []);
+
   const renderItem = useCallback(({ item }: { item: CardResponse }) => (
     <CardItem
       item={item}
@@ -358,9 +399,9 @@ export default function DashboardScreen() {
       onLongPress={handleLongPressCard}
       isSelectMode={isSelectMode}
       isSelected={selectedCardIds.includes(item.id)}
-      formatDate={formatDate}
+      onCallPress={handleCallPress}
     />
-  ), [handlePressCard, handleLongPressCard, isSelectMode, selectedCardIds, formatDate]);
+  ), [handlePressCard, handleLongPressCard, isSelectMode, selectedCardIds, handleCallPress]);
 
   const renderEmptyState = () => {
     if (searchQuery.trim().length > 0) {
@@ -653,6 +694,41 @@ export default function DashboardScreen() {
         </View>
       </Modal>
 
+      {/* Phone Picker Modal */}
+      <Modal
+        visible={phonePickerVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setPhonePickerVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.pickerModalContent}>
+            <Text style={styles.pickerTitle}>Select a number to call</Text>
+            
+            {phonePickerOptions.map((phone, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.pickerOption}
+                onPress={() => {
+                  setPhonePickerVisible(false);
+                  Linking.openURL(`tel:${phone}`);
+                }}
+              >
+                <Text style={styles.pickerOptionText}>{phone}</Text>
+                <MaterialIcons name="phone" size={20} color="#2E1028" />
+              </TouchableOpacity>
+            ))}
+
+            <TouchableOpacity
+              style={styles.pickerCancelButton}
+              onPress={() => setPhonePickerVisible(false)}
+            >
+              <Text style={styles.pickerCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -744,7 +820,40 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  pickerModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+  },
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#2E1028',
+  },
+  pickerOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f3f5',
+  },
+  pickerOptionText: {
+    fontSize: 16,
+  },
+  pickerCancelButton: {
+    marginTop: 20,
+    padding: 10,
+    alignItems: 'center',
+  },
+  pickerCancelText: {
+    color: '#DC2626',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   modalContent: {
     backgroundColor: '#fff',
@@ -839,11 +948,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   cardItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 16,
     borderRadius: 12,
     marginBottom: 12,
     shadowColor: '#000',
@@ -851,14 +956,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 2,
     elevation: 1,
+    overflow: 'hidden',
   },
   thumbnailContainer: {
-    width: 60,
-    height: 40,
-    borderRadius: 4,
-    marginRight: 12,
-    backgroundColor: '#F3F4F6',
-    overflow: 'hidden',
+    width: '100%',
+    height: 140,
+    backgroundColor: '#E3E4DD',
   },
   thumbnail: {
     width: '100%',
@@ -868,11 +971,21 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#E3E4DD',
+  },
+  thumbnailInitials: {
+    fontSize: 48,
+    color: '#9CA3AF',
+    fontWeight: 'bold',
+  },
+  bottomSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
   },
   cardInfo: {
     flex: 1,
-    marginRight: 10,
+    justifyContent: 'center',
   },
   cardName: {
     fontSize: 16,
@@ -882,7 +995,21 @@ const styles = StyleSheet.create({
   },
   cardCompany: {
     fontSize: 14,
-    color: '#6B6B6B',
+    color: '#6B7280',
+  },
+  verticalDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 16,
+  },
+  callButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#2E1028',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cardMeta: {
     flexDirection: 'row',
@@ -1060,7 +1187,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   checkboxContainer: {
-    marginRight: 12,
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
   }

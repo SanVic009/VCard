@@ -5,7 +5,7 @@ import httpx
 import logging
 from io import BytesIO
 from PIL import Image
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, RetryCallState
+from tenacity import retry, stop_after_attempt, wait_exponential, RetryCallState
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +157,7 @@ async def call_huggingface_api(images: list, on_attempt=None) -> str:
         ]
     }
 
-    last_err_msg = ""
+    last_exception = None
     for api_key in api_keys:
         headers = {
             "Authorization": f"Bearer {api_key}",
@@ -170,10 +170,12 @@ async def call_huggingface_api(images: list, on_attempt=None) -> str:
                 
                 if response.status_code == 401:
                     logger.warning("Hugging Face API token returned 401 Unauthorized. Trying next key if available.")
-                    last_err_msg = "AI service authentication failed."
+                    last_exception = ExtractionError("AI service authentication failed.")
                     continue
                 if response.status_code == 429:
-                    raise NonRetryableExtractionError("AI service rate limit reached.")
+                    logger.warning("Hugging Face API token returned 429 Rate Limited. Trying next key if available.")
+                    last_exception = ExtractionError("AI service rate limit reached.")
+                    continue
                 if response.status_code == 422:
                     raise NonRetryableExtractionError("AI service rejected the request payload.")
                 
@@ -185,19 +187,27 @@ async def call_huggingface_api(images: list, on_attempt=None) -> str:
                 return raw_text
 
         except httpx.TimeoutException:
-            logger.warning("Hugging Face API timeout.")
-            raise ExtractionError("AI service timed out.")
+            logger.warning("Hugging Face API timeout. Trying next key if available.")
+            last_exception = ExtractionError("AI service timed out.")
+            continue
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 503:
-                logger.warning("Hugging Face API 503 unavailable.")
-                raise ExtractionError("AI service temporarily unavailable.")
-            logger.warning(f"Hugging Face HTTP Error {e.response.status_code}: {e.response.text[:200]}")
-            raise ExtractionError("AI service encountered a network error.")
+                logger.warning("Hugging Face API 503 unavailable. Trying next key if available.")
+                last_exception = ExtractionError("AI service temporarily unavailable.")
+                continue
+            logger.warning(f"Hugging Face HTTP Error {e.response.status_code}: {e.response.text[:200]}. Trying next key if available.")
+            last_exception = ExtractionError("AI service encountered a network error.")
+            continue
         except httpx.RequestError as e:
-            logger.warning(f"Hugging Face request error: {e}")
-            raise ExtractionError("AI service network error.")
+            logger.warning(f"Hugging Face request error: {e}. Trying next key if available.")
+            last_exception = ExtractionError("AI service network error.")
+            continue
+        except NonRetryableExtractionError:
+            raise
 
-    raise NonRetryableExtractionError(last_err_msg or "AI service authentication failed.")
+    if last_exception:
+        raise last_exception
+    raise NonRetryableExtractionError("AI service authentication failed.")
 
 async def process_business_card(images: list, on_attempt=None) -> dict:
     for img in images:
