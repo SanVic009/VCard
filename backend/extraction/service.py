@@ -14,6 +14,7 @@ HF_BACKUP_API_KEY = os.environ.get("HUGGINGFACE_BACKUP_API_KEY", "").strip()
 HF_MODEL_ID = os.environ.get("HUGGINGFACE_MODEL_ID", "google/gemma-4-26B-A4B-it:novita")
 TIMEOUT_SECONDS = int(os.environ.get("EXTRACTION_TIMEOUT_SECONDS", "30"))
 MAX_RETRIES = int(os.environ.get("EXTRACTION_MAX_RETRIES", "3"))
+# Chat completions API endpoint for HF Router
 HF_API_URL = "https://router.huggingface.co/v1/chat/completions"
 
 class ExtractionError(Exception):
