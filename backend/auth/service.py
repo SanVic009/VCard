@@ -73,3 +73,34 @@ class AuthService:
     @staticmethod
     def get_me(payload: dict) -> UserInfo:
         return UserInfo(id=payload.get("id"), email=payload.get("email"))
+
+    @staticmethod
+    def forgot_password(email: str, supabase: Client = None) -> bool:
+        email = email.strip().lower()
+        try:
+            page = 1
+            per_page = 100
+            user_exists = False
+            while True:
+                users = supabase.auth.admin.list_users(page=page, per_page=per_page)
+                if not users:
+                    break
+                if any(u.email.lower() == email for u in users if u.email):
+                    user_exists = True
+                    break
+                if len(users) < per_page:
+                    break
+                page += 1
+        except Exception as e:
+            logger.error(f"Failed to verify user existence for forgot-password: {str(e)}")
+            user_exists = True
+
+        if not user_exists:
+            return False
+
+        try:
+            supabase.auth.reset_password_for_email(email)
+            logger.info(f"Password reset email triggered for: {email}")
+        except Exception as e:
+            logger.warning(f"Password reset failed/ignored for {email}: {str(e)}")
+        return True

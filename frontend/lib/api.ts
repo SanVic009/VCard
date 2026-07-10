@@ -144,4 +144,9 @@ export const getMe = async (): Promise<UserInfo> => {
   return response.data;
 };
 
+export const forgotPassword = async (email: string): Promise<{ message: string }> => {
+  const response = await api.post<{ message: string }>('/auth/forgot-password', { email });
+  return response.data;
+};
+
 export default api;

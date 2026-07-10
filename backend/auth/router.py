@@ -2,7 +2,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from supabase import Client
 from .dependencies import get_supabase, get_current_user
-from .schemas import SignupRequest, LoginRequest, RefreshRequest, AuthResponse, UserInfo, MessageResponse
+from .schemas import SignupRequest, LoginRequest, RefreshRequest, AuthResponse, UserInfo, MessageResponse, ForgotPasswordRequest
 from .service import AuthService
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -46,3 +46,15 @@ def refresh(request: Request, body: RefreshRequest, supabase: Client | None = De
 def get_me(current_user: dict = Depends(get_current_user)):
     logger.debug("User profile retrieved")
     return AuthService.get_me(current_user)
+
+@router.post("/forgot-password", response_model=MessageResponse)
+@limiter.limit("3/minute")
+def forgot_password(request: Request, body: ForgotPasswordRequest, supabase: Client | None = Depends(get_supabase)):
+    logger.info("Forgot password requested")
+    exists = AuthService.forgot_password(email=body.email, supabase=supabase)
+    if not exists:
+        raise HTTPException(
+            status_code=404,
+            detail="Email address not found. Please sign up."
+        )
+    return MessageResponse(message="If this email exists, a reset link has been sent.")

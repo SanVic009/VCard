@@ -23,3 +23,6 @@ class AuthResponse(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
