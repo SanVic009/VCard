@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, Request
 from supabase import Client
 from .dependencies import get_supabase, get_current_user
 from .schemas import SignupRequest, LoginRequest, RefreshRequest, AuthResponse, UserInfo, MessageResponse

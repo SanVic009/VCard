@@ -1,6 +1,5 @@
 import logging
 import datetime
-import json
 import contextvars
 from pythonjsonlogger import jsonlogger
 
