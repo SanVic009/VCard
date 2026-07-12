@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Linking, Alert } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Drawer } from 'expo-router/drawer';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { getCompanyDetail, CompanyDetail, enrichCard } from '../../../lib/enrichmentApi';
 
@@ -13,6 +12,7 @@ export default function CompanyDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [company, setCompany] = useState<CompanyDetail | null>(null);
   const [retrying, setRetrying] = useState(false);
+
 
   const fetchCompany = async () => {
     try {
@@ -154,7 +154,11 @@ export default function CompanyDetailScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Drawer.Screen options={{ title: 'Enriching...' }} />
+        <Stack.Screen 
+          options={{ 
+            title: 'Enriching...'
+          }} 
+        />
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#2E1028" />
           <Text style={styles.loadingText}>Gathering company info...</Text>
@@ -168,7 +172,11 @@ export default function CompanyDetailScreen() {
     const targetCardId = cardId || company?.card_id;
     return (
       <View style={styles.container}>
-        <Drawer.Screen options={{ title: 'No Information' }} />
+        <Stack.Screen 
+          options={{ 
+            title: 'No Information'
+          }} 
+        />
         <View style={styles.center}>
           <MaterialIcons name="error-outline" size={54} color="#DC2626" style={{ marginBottom: 16 }} />
           <Text style={styles.errorText}>No company information found.</Text>
@@ -177,10 +185,6 @@ export default function CompanyDetailScreen() {
           ) : null}
 
           <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.btnBack} onPress={() => router.back()}>
-              <Text style={styles.btnBackText}>Go Back</Text>
-            </TouchableOpacity>
-
             {targetCardId ? (
               <TouchableOpacity
                 style={[styles.btnRetry, retrying && styles.btnDisabled]}
@@ -207,7 +211,11 @@ export default function CompanyDetailScreen() {
   if (company.enrichment_status === 'pending') {
     return (
       <View style={styles.container}>
-        <Drawer.Screen options={{ title: 'Enriching...' }} />
+        <Stack.Screen 
+          options={{ 
+            title: 'Enriching...'
+          }} 
+        />
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#2E1028" />
           <Text style={styles.loadingText}>Gathering company info...</Text>
@@ -220,7 +228,11 @@ export default function CompanyDetailScreen() {
   // State: Completed
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Drawer.Screen options={{ title: company.name || 'Company Details' }} />
+      <Stack.Screen 
+        options={{ 
+          title: company.name || 'Company Details'
+        }} 
+      />
 
       {/* Header Profile Section */}
       <View style={styles.headerCard}>
@@ -310,11 +322,6 @@ export default function CompanyDetailScreen() {
           <Text style={styles.emptyText}>—</Text>
         )}
       </View>
-
-      <TouchableOpacity style={styles.btnBackMain} onPress={() => router.back()}>
-        <FontAwesome name="arrow-left" size={14} color="#FFFFFF" style={{ marginRight: 8 }} />
-        <Text style={styles.btnBackMainText}>Go Back</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -355,19 +362,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 22,
-  },
-  btnBack: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: '#2E1028',
-  },
-  btnBackText: {
-    color: '#2E1028',
-    fontWeight: '600',
-    fontSize: 14,
   },
   headerCard: {
     backgroundColor: '#FFFFFF',
@@ -503,20 +497,6 @@ const styles = StyleSheet.create({
     color: '#6B6B6B',
     fontSize: 15,
     fontWeight: '500',
-  },
-  btnBackMain: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2E1028',
-    borderRadius: 8,
-    paddingVertical: 14,
-    marginTop: 10,
-  },
-  btnBackMainText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
   },
   buttonRow: {
     flexDirection: 'row',

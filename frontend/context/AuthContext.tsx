@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user && !inAuthGroup) {
       router.replace('/auth/login');
     } else if (user && inAuthGroup) {
-      router.replace('/(app)/dashboard');
+      router.replace('/(app)/dashboard' as any);
     }
   }, [user, segments, loading]);
 

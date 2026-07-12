@@ -4,15 +4,15 @@ import { Image as ExpoImage } from 'expo-image';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
-import { CardResponse, deleteCard } from '../../lib/cardsApi';
-import { useCards } from '../../hooks/useCards';
+import { CardResponse, deleteCard } from '../../../lib/cardsApi';
+import { useCards } from '../../../hooks/useCards';
 import * as ImagePicker from 'expo-image-picker';
-import { requestCameraPermission, requestGalleryPermission } from '../../lib/permissions';
-import { processImage } from '../../lib/imageProcessor';
-import { useImageContext } from '../../context/ImageContext';
-import { CardListSkeleton } from '../../components/Skeleton';
-import { trackEvent } from '../../lib/analytics';
-import { mutationState } from '../../lib/mutationState';
+import { requestCameraPermission, requestGalleryPermission } from '../../../lib/permissions';
+import { processImage } from '../../../lib/imageProcessor';
+import { useImageContext } from '../../../context/ImageContext';
+import { CardListSkeleton } from '../../../components/Skeleton';
+import { trackEvent } from '../../../lib/analytics';
+import { mutationState } from '../../../lib/mutationState';
 import * as Linking from 'expo-linking';
 
 interface CardItemProps {

@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, useWindowDimensions } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
-import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { Drawer } from 'expo-router/drawer';
+import { useLocalSearchParams, useRouter, useFocusEffect, Stack } from 'expo-router';
 import { useCard } from '../../../hooks/useCard';
 import { deleteCard } from '../../../lib/cardsApi';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -173,7 +172,7 @@ export default function CardDetailScreen() {
               mutationState.hasMutated = true;
               trackEvent('card_deleted');
               Alert.alert("Success", "Card deleted successfully.");
-              router.replace('/(app)/dashboard');
+              router.replace('/(app)/dashboard' as any);
             } catch (err: any) {
               const message = err.message || "Failed to delete card";
               Alert.alert("Error", message);
@@ -189,7 +188,7 @@ export default function CardDetailScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Drawer.Screen options={{ title: 'Loading...' }} />
+        <Stack.Screen options={{ title: 'Loading...' }} />
         <View style={styles.content}>
           <CardDetailSkeleton />
         </View>
@@ -200,7 +199,7 @@ export default function CardDetailScreen() {
   if (error || !card) {
     return (
       <View style={styles.center}>
-        <Drawer.Screen options={{ title: 'Error' }} />
+        <Stack.Screen options={{ title: 'Error' }} />
         <MaterialIcons name="error-outline" size={48} color="#dc3545" style={{ marginBottom: 15 }} />
         <Text style={styles.errorText}>Card not found.</Text>
         <TouchableOpacity style={styles.btnBack} onPress={() => router.back()}>
@@ -212,7 +211,7 @@ export default function CardDetailScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Drawer.Screen 
+      <Stack.Screen 
         options={{ 
           title: card.name || 'Card Details',
           headerRight: () => (

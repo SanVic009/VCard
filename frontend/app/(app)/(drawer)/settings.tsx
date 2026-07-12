@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 import { MaterialIcons } from '@expo/vector-icons';
 
-import { useImageContext } from '../../context/ImageContext';
+import { useImageContext } from '../../../context/ImageContext';
 
 export default function SettingsScreen() {
   const { logout, user } = useAuth();

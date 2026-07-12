@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Drawer } from 'expo-router/drawer';
+import { useRouter, Stack } from 'expo-router';
 import { useImageContext } from '../../context/ImageContext';
 import { processImage } from '../../lib/imageProcessor';
 import { requestCameraPermission } from '../../lib/permissions';
@@ -61,7 +60,7 @@ export default function CardCaptureScreen() {
           style: "destructive",
           onPress: async () => {
             await clearSelectedImages();
-            router.replace('/(app)/dashboard');
+            router.replace('/(app)/dashboard' as any);
           }
         }
       ]
@@ -72,7 +71,7 @@ export default function CardCaptureScreen() {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>No image captured.</Text>
-        <TouchableOpacity style={styles.btnPrimary} onPress={() => router.replace('/(app)/dashboard')}>
+        <TouchableOpacity style={styles.btnPrimary} onPress={() => router.replace('/(app)/dashboard' as any)}>
           <Text style={styles.btnPrimaryText}>Go to Dashboard</Text>
         </TouchableOpacity>
       </View>
@@ -81,7 +80,7 @@ export default function CardCaptureScreen() {
 
   return (
     <View style={styles.container}>
-      <Drawer.Screen options={{ title: 'VCard' }} />
+      <Stack.Screen options={{ title: 'VCard' }} />
       
       {isProcessing && (
         <View style={styles.loadingOverlay}>

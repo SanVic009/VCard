@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  StyleSheet, 
-  ActivityIndicator, 
-  TouchableOpacity, 
-  KeyboardAvoidingView, 
-  Platform, 
-  TouchableWithoutFeedback, 
-  Keyboard, 
-  ScrollView 
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  ScrollView
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'expo-router';
@@ -73,7 +73,7 @@ export default function SignupScreen() {
     }
 
     if (hasError) return;
-    
+
     try {
       setIsSubmitting(true);
       await signup(sanitizedEmail, password);
@@ -132,14 +132,14 @@ export default function SignupScreen() {
                 onFocus={() => setFocusedField('password')}
                 onBlur={() => setFocusedField(null)}
               />
-              <TouchableOpacity 
-                style={styles.eyeButton} 
+              <TouchableOpacity
+                style={styles.eyeButton}
                 onPress={() => setShowPassword(!showPassword)}
               >
-                <MaterialIcons 
-                  name={showPassword ? "visibility-off" : "visibility"} 
-                  size={24} 
-                  color="#6B7280" 
+                <MaterialIcons
+                  name={showPassword ? "visibility-off" : "visibility"}
+                  size={24}
+                  color="#6B7280"
                 />
               </TouchableOpacity>
             </View>
@@ -162,14 +162,14 @@ export default function SignupScreen() {
                 onFocus={() => setFocusedField('confirmPassword')}
                 onBlur={() => setFocusedField(null)}
               />
-              <TouchableOpacity 
-                style={styles.eyeButton} 
+              <TouchableOpacity
+                style={styles.eyeButton}
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
               >
-                <MaterialIcons 
-                  name={showConfirmPassword ? "visibility-off" : "visibility"} 
-                  size={24} 
-                  color="#6B7280" 
+                <MaterialIcons
+                  name={showConfirmPassword ? "visibility-off" : "visibility"}
+                  size={24}
+                  color="#6B7280"
                 />
               </TouchableOpacity>
             </View>
@@ -182,7 +182,7 @@ export default function SignupScreen() {
                 <Text style={styles.primaryBtnText}>Sign Up</Text>
               </TouchableOpacity>
             )}
-            
+
             <Link href="/auth/login" style={styles.link}>
               Already have an account? Login
             </Link>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Drawer } from 'expo-router/drawer';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useCard } from '../../../../hooks/useCard';
 import { updateCard } from '../../../../lib/cardsApi';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -260,7 +259,7 @@ export default function CardEditScreen() {
   if (fetchingCard) {
     return (
       <View style={styles.center}>
-        <Drawer.Screen options={{ title: 'Loading...' }} />
+        <Stack.Screen options={{ title: 'Loading...' }} />
         <ActivityIndicator size="large" color="#2E1028" />
       </View>
     );
@@ -269,7 +268,7 @@ export default function CardEditScreen() {
   if (error || !card) {
     return (
       <View style={styles.center}>
-        <Drawer.Screen options={{ title: 'Error' }} />
+        <Stack.Screen options={{ title: 'Error' }} />
         <MaterialIcons name="error-outline" size={48} color="#DC2626" style={{ marginBottom: 15 }} />
         <Text style={styles.errorText}>{error || 'Card not found.'}</Text>
         <TouchableOpacity onPress={() => router.back()} style={styles.btnBack}>
@@ -281,7 +280,7 @@ export default function CardEditScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Drawer.Screen options={{ title: card.name ? `Edit ${card.name}` : 'Edit Card' }} />
+      <Stack.Screen options={{ title: card.name ? `Edit ${card.name}` : 'Edit Card' }} />
       
       <View style={styles.form}>
         <View style={styles.fieldGroup}>

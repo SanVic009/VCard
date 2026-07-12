@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert, TextInput } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Drawer } from 'expo-router/drawer';
+import { useRouter, Stack } from 'expo-router';
 import { useImageContext } from '../../context/ImageContext';
 import * as FileSystem from 'expo-file-system/legacy';
 import { extractBusinessCard, ExtractionData } from '../../lib/extractionApi';
@@ -212,7 +211,7 @@ export default function ConfirmScreen() {
           style: "destructive",
           onPress: () => {
             clearSelectedImages();
-            router.replace('/(app)/dashboard');
+            router.replace('/(app)/dashboard' as any);
           }
         }
       ]
@@ -300,7 +299,7 @@ export default function ConfirmScreen() {
       }
       
       clearSelectedImages();
-      router.replace('/(app)/dashboard');
+      router.replace('/(app)/dashboard' as any);
 
     } catch (err: any) {
       Alert.alert("Save Failed", err.message || "An error occurred while saving the card.");
@@ -313,7 +312,7 @@ export default function ConfirmScreen() {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>No image selected.</Text>
-        <TouchableOpacity style={styles.btnPrimary} onPress={() => router.replace('/(app)/dashboard')}>
+        <TouchableOpacity style={styles.btnPrimary} onPress={() => router.replace('/(app)/dashboard' as any)}>
           <Text style={styles.btnText}>Go to Dashboard</Text>
         </TouchableOpacity>
       </View>
@@ -356,7 +355,7 @@ export default function ConfirmScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Drawer.Screen options={{ title: 'VCard' }} />
+      <Stack.Screen options={{ title: 'VCard' }} />
       <Text style={styles.title}>VCard</Text>
       
       <View style={styles.card}>

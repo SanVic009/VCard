@@ -89,3 +89,4 @@ yarn-error.log*
 .tsbuildinfo
 
 TODO.md
+start.sh
