@@ -1,6 +1,6 @@
 import logging
 import time
-from fastapi import Depends, Request
+from fastapi import Request
 from fastapi.security import OAuth2PasswordBearer
 from supabase import create_client, Client
 from core.config import settings

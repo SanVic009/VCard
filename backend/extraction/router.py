@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional, List
-from core.config import settings
 from auth.dependencies import get_current_user, get_supabase
 from supabase import Client
 from extraction.service import process_business_card
